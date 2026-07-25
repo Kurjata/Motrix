@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Motrix</title>
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    // aplica o tema antes de pintar a tela: sem isso o modo escuro pisca branco ao carregar
+    try {
+      var tema = localStorage.getItem('motrix:tema');
+      if (tema) document.documentElement.dataset.tema = tema;
+    } catch (e) { /* navegacao privada sem localStorage: segue no tema do sistema */ }
+  </script>
+</head>
+<body>
+  <header>
+    <div class="marca">
+      <strong>Motrix</strong>
+      <span class="suave">controle de peças catalogadas</span>
+    </div>
+    <div class="catalogo-barra">
+      <select id="catalogo"></select>
+      <button id="novo-catalogo" class="secundario">Novo catálogo</button>
+      <button id="tema" class="secundario" type="button" title="Alternar entre claro e escuro"></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="cartao">
+      <h2>Importar arquivo</h2>
+      <form id="form-upload">
+        <div class="linha">
+          <label>Fornecedor (fábrica)
+            <input name="fornecedor" list="fornecedores" placeholder="ex.: ACME Autopeças" />
+            <datalist id="fornecedores"></datalist>
+          </label>
+          <label>Data-base
+            <input type="date" name="vigencia" />
+          </label>
+          <label class="cresce">Arquivos
+            <input type="file" name="arquivos" multiple
+                   accept=".xlsx,.xlsm,.xls,.docx,.doc,.pdf,.psd" required />
+          </label>
+          <button type="submit">Importar</button>
+        </div>
+        <p class="dica">
+          Serve tanto para o catálogo de peças quanto para a tabela de preços da fábrica —
+          o Motrix reconhece as colunas sozinho e casa as peças pelo código.
+          Faixas por volume (“100 a 199”, “acima de 200”) viram preço por quantidade.
+        </p>
+      </form>
+      <div id="resultado-upload" class="aviso oculto"></div>
+    </section>
+
+    <section class="cartao">
+      <h2>Catálogo de apresentação</h2>
+      <form id="form-exportar">
+        <div class="linha">
+          <label class="cresce">Título
+            <input name="titulo" placeholder="ex.: Linha de suspensão — Volkswagen" />
+          </label>
+          <label class="cresce">Subtítulo
+            <input name="subtitulo" placeholder="ex.: Tabela válida para julho/2026" />
+          </label>
+        </div>
+        <div class="linha">
+          <label>Agrupar por
+            <select name="agrupar">
+              <option value="montadora">Montadora</option>
+              <option value="nenhum">Sem agrupamento</option>
+            </select>
+          </label>
+          <label>Preço
+            <select name="preco">
+              <option value="venda">Preço de venda</option>
+              <option value="nenhum">Sem preço</option>
+              <option value="interno">Uso interno (custo e margem)</option>
+            </select>
+          </label>
+          <label class="inline">
+            <input type="checkbox" name="apenas_com_foto" value="1" /> Só peças com foto
+          </label>
+          <button type="button" id="abrir-previa">Abrir catálogo</button>
+          <button type="button" id="baixar-html" class="secundario">Baixar HTML</button>
+          <button type="button" id="baixar-xlsx" class="secundario">Baixar planilha</button>
+        </div>
+        <p class="dica">
+          Usa os filtros de montadora e fornecedor aplicados na lista abaixo.
+          O HTML é autocontido (fotos embutidas) e já sai pronto para virar PDF pelo Ctrl+P do navegador.
+        </p>
+      </form>
+
+      <div class="linha precificar">
+        <label>Margem sobre o custo
+          <input id="margem" type="number" step="1" value="45" /></label>
+        <label>Partindo do
+          <select id="base-margem">
+            <option value="custo_base">Custo de 1 unidade</option>
+            <option value="melhor_custo">Melhor custo (volume)</option>
+          </select>
+        </label>
+        <label class="inline"><input type="checkbox" id="sobrescrever" /> Sobrescrever preços já definidos</label>
+        <button type="button" id="aplicar-margem" class="secundario">Aplicar margem</button>
+      </div>
+      <div id="resumo-exportacao" class="aviso oculto"></div>
+    </section>
+
+    <section class="cartao">
+      <div class="cabecalho-secao">
+        <h2>Peças <span id="contador" class="contador"></span></h2>
+        <div class="filtros">
+          <select id="filtro-montadora"><option value="">Todas as montadoras</option></select>
+          <select id="filtro-fornecedor"><option value="">Todos os fornecedores</option></select>
+          <input id="busca" type="search" placeholder="código, OEM, descrição ou aplicação..." />
+        </div>
+      </div>
+      <table id="tabela-itens">
+        <thead>
+          <tr><th></th><th>Código</th><th>Descrição</th><th>Fornecedor</th>
+              <th class="num">Custo</th><th class="num">Volume</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="paginacao">
+        <button id="anterior" class="secundario">Anterior</button>
+        <span id="pagina-atual"></span>
+        <button id="proxima" class="secundario">Próxima</button>
+      </div>
+    </section>
+  </main>
+
+  <aside id="painel" class="painel oculto">
+    <div class="painel-cabecalho">
+      <h2 id="painel-titulo">Peça</h2>
+      <button id="fechar-painel" class="secundario">Fechar</button>
+    </div>
+    <div id="painel-corpo"></div>
+  </aside>
+  <div id="cortina" class="cortina oculto"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

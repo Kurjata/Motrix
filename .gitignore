@@ -1,0 +1,11 @@
+node_modules/
+
+# banco SQLite, arquivos importados e imagens extraidas: dado de uso, nao de codigo
+data/
+.smoke-data/
+
+# planilhas, PDF e PSD de exemplo sao gerados pelos scripts
+exemplos/
+
+*.log
+.env

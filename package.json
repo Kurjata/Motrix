@@ -1,0 +1,27 @@
+{
+  "name": "motrix",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Motrix - controle de pecas catalogadas: importa catalogos e tabelas de preco, consolida o DE-PARA e exporta o catalogo de apresentacao",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "ag-psd": "^31.0.2",
+    "better-sqlite3": "^11.7.0",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "image-size": "^1.2.0",
+    "mammoth": "^1.9.0",
+    "multer": "^2.2.0",
+    "node-html-parser": "^6.1.13",
+    "pdfjs-dist": "^3.11.174"
+  }
+}
