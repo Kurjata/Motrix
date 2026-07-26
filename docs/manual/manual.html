@@ -166,7 +166,7 @@
 <div class="capa">
   <div class="capa-topo">
     <div class="produto">Catálogo · Peças&nbsp;Automotivas</div>
-    <div class="doc">Manual de uso<br />Versão 1.2</div>
+    <div class="doc">Manual de uso<br />Versão 1.3</div>
   </div>
 
   <h1>Da planilha da fábrica ao <em>catálogo do cliente</em>.</h1>
@@ -507,8 +507,25 @@
       <tr><td><strong>Fornecedor</strong></td><td>Quem tem o menor preço vigente. O <code>(+1)</code> ao lado indica que existe outra fábrica cotando a mesma peça.</td></tr>
       <tr><td><strong>Custo</strong></td><td>O que você paga <strong>comprando pouco</strong> (faixa de 1 unidade).</td></tr>
       <tr><td><strong>Volume</strong></td><td>O menor preço que existe em qualquer faixa, ou seja, comprando quantidade.</td></tr>
+      <tr><td><strong>Variação</strong></td>
+          <td>Quanto o melhor custo mudou desde a última vez. <span style="color:#1c6b45">▼ -7,0%</span> ficou
+          mais barato, <span style="color:#b42318">▲ +9,5%</span> aumentou, <em>estável</em> não mudou, e
+          <em>—</em> é peça sem preço anterior para comparar.</td></tr>
     </tbody>
   </table>
+
+  <h3>A data embaixo do custo</h3>
+  <p>Abaixo de cada custo aparece <em>desde 01/03/2026</em>: é a data-base da tabela que definiu
+  aquele preço. Quando ela vem em laranja com um <strong>⚠</strong>, significa que aquela fábrica
+  já mandou tabela mais nova <strong>e essa peça não estava nela</strong> — o preço continua no
+  sistema, mas é antigo. Serve para você não cotar em cima de número vencido.</p>
+
+  <div class="nota">
+    <span class="rotulo">Preço confirmado não é preço velho</span>
+    <p>Se a tabela nova traz a peça com o <strong>mesmo</strong> preço, o programa não cria registro
+    novo no histórico — mas anota que o preço foi visto de novo. Por isso ele não aparece com o aviso:
+    não mudou, mas está confirmado.</p>
+  </div>
 
   <div class="nota">
     <span class="rotulo">Por que duas colunas de preço</span>
@@ -649,6 +666,26 @@ BETA    1+ un ......... R$ 71,20</div>
   </table>
   <p>O reajuste é <strong>por faixa</strong>: a fábrica pode subir o preço unitário e manter o de 200 unidades.
   Por isso “a peça aumentou 9%” só faz sentido dizendo em qual faixa.</p>
+
+  <h3>Como ler a coluna Variação</h3>
+  <p>A variação que a lista mostra é a do <strong>melhor custo</strong> — o que você realmente
+  pagaria. É por isso que ela às vezes discorda da tabela da fábrica, e isso é proposital:</p>
+
+  <div class="exemplo">
+    <span class="rotulo">Dois casos que parecem contraditórios</span>
+    <p><strong>A fábrica aumentou e a peça aparece “estável”.</strong> A ACME subiu o preço avulso
+    da PF-1001 de R$ 78,90 para R$ 86,40 (+9,5%), mas o melhor custo dela continua sendo
+    R$ 66,50 na faixa de 200 unidades. Para quem compra volume, nada mudou — e é isso que a
+    coluna diz. O reajuste de 9,5% está registrado no histórico, dentro da peça.</p>
+    <p><strong>A fábrica não mexeu em nada e a peça aparece mais barata.</strong> A AM-2050 caiu
+    9,8% quando entrou a tabela de volume: apareceu uma faixa de 200 unidades a R$ 143,20, abaixo
+    dos R$ 158,75 que eram o melhor preço até então. O custo não baixou — apareceu um caminho
+    melhor de comprar.</p>
+  </div>
+
+  <p>O filtro <strong>Só o que mudou de preço</strong>, ao lado da busca, deixa na tela apenas as
+  peças cujo melhor custo é diferente do anterior. É a primeira coisa a fazer depois de importar
+  uma tabela nova.</p>
 
   <h3>Definir seu preço de venda</h3>
   <p>Peça por peça, no painel de edição. Ou de uma vez, no bloco <strong>Catálogo de apresentação</strong>:
@@ -792,6 +829,18 @@ BETA    1+ un ......... R$ 71,20</div>
       as que têm custo.</p>
     </div>
     <div>
+      <h4>A fábrica aumentou, mas a coluna Variação diz “estável”</h4>
+      <p>A variação é a do melhor custo. Se a fábrica subiu o preço avulso mas o seu melhor preço
+      continua sendo o de volume — ou o de outra fábrica —, para você não mudou. O reajuste está
+      registrado: abra a peça e veja o <strong>Histórico de reajuste</strong>, que mostra cada faixa
+      de cada fornecedor com a variação em %.</p>
+    </div>
+    <div>
+      <h4>Apareceu ⚠ na data embaixo do custo</h4>
+      <p>Aquela fábrica mandou tabela mais nova e a peça não estava nela. O preço mostrado é o antigo.
+      Confirme com a fábrica se a peça saiu de linha ou se ficou de fora por engano.</p>
+    </div>
+    <div>
       <h4>Quero desfazer uma importação inteira</h4>
       <p>Hoje não há botão para isso na tela — a exclusão é peça por peça, no painel de edição.
       Se você importou um arquivo muito errado, o caminho mais rápido é criar um catálogo novo e
@@ -805,7 +854,7 @@ BETA    1+ un ......... R$ 71,20</div>
     </div>
   </div>
 
-  <p class="fim">Catálogo · Peças Automotivas — Manual de uso, versão 1.2</p>
+  <p class="fim">Catálogo · Peças Automotivas — Manual de uso, versão 1.3</p>
 </section>
 
 </body>

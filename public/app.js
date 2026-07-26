@@ -7,6 +7,7 @@ const estado = {
   busca: '',
   montadora: '',
   fornecedorId: '',
+  soVariou: false,
   fornecedores: [],
   item: null,
 };
@@ -117,6 +118,25 @@ async function carregarMontadoras() {
   $('#filtro-montadora').value = estado.montadora;
 }
 
+/** "01/03/2026" a partir de "2026-03-01". */
+const dataCurta = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
+
+/** Variação do melhor custo: seta para cima é reajuste, para baixo é queda. */
+function celulaVariacao(item) {
+  if (item.variacao_custo == null) {
+    const primeiroPreco = item.melhor_custo != null;
+    return `<span class="suave" title="${primeiroPreco ? 'Primeiro preço: não há anterior para comparar' : 'Sem preço lançado'}">—</span>`;
+  }
+  if (item.variacao_custo === 0) {
+    return '<span class="suave" title="O melhor custo não mudou">estável</span>';
+  }
+
+  const subiu = item.variacao_custo > 0;
+  const valor = `${subiu ? '+' : ''}${item.variacao_custo.toFixed(1)}%`;
+  return `<span class="${subiu ? 'reajuste-alta' : 'reajuste-baixa'}"
+    title="Melhor custo desde ${dataCurta(item.preco_desde)}">${subiu ? '▲' : '▼'} ${valor}</span>`;
+}
+
 function linhaItem(item) {
   const foto = item.imagens[0]
     ? `<img class="miniatura" src="${item.imagens[0].url}" alt="" />`
@@ -130,14 +150,19 @@ function linhaItem(item) {
     ? `${moeda(item.melhor_custo)} <span class="suave">no volume</span>`
     : '<span class="suave">—</span>';
 
+  const aviso = item.preco_desatualizado
+    ? `<div class="desatualizado" title="A última tabela deste fornecedor não trouxe esta peça. O preço é de ${dataCurta(item.preco_desde)}.">⚠ desde ${dataCurta(item.preco_desde)}</div>`
+    : (item.preco_desde ? `<div class="suave desde">desde ${dataCurta(item.preco_desde)}</div>` : '');
+
   return `
     <tr class="clicavel" data-item="${item.id}">
       <td>${foto}</td>
       <td><strong>${escapar(item.codigo ?? '—')}</strong></td>
       <td>${escapar(item.descricao_completa) || '<span class="suave">sem descrição</span>'}</td>
       <td>${fornecedores}</td>
-      <td class="num">${moeda(item.custo_base ?? item.melhor_custo)}</td>
+      <td class="num">${moeda(item.custo_base ?? item.melhor_custo)}${aviso}</td>
       <td class="num">${volume}</td>
+      <td class="num">${celulaVariacao(item)}</td>
       <td><button class="secundario mini" data-item="${item.id}">Editar</button></td>
     </tr>`;
 }
@@ -150,11 +175,13 @@ async function carregarItens() {
   if (estado.busca) parametros.set('busca', estado.busca);
   if (estado.montadora) parametros.set('montadora', estado.montadora);
   if (estado.fornecedorId) parametros.set('fornecedor_id', estado.fornecedorId);
+  if (estado.soVariou) parametros.set('variou', '1');
 
   const dados = await api(`/api/catalogos/${estado.catalogoId}/itens?${parametros}`);
   corpo.innerHTML = dados.itens.length
     ? dados.itens.map(linhaItem).join('')
-    : '<tr><td colspan="7" class="suave">Nenhuma peça encontrada.</td></tr>';
+    : `<tr><td colspan="8" class="suave">${estado.soVariou
+        ? 'Nenhuma peça mudou de preço na última importação.' : 'Nenhuma peça encontrada.'}</td></tr>`;
 
   const paginas = Math.max(Math.ceil(dados.total / estado.limite), 1);
   $('#contador').textContent = `— ${dados.total} peça(s)`;
@@ -268,10 +295,14 @@ function blocoPrecos(item) {
     porFornecedor.get(custo.fornecedor).push(custo);
   }
 
+  // o aviso vai em cada faixa, não no fornecedor: a tabela nova pode ter trazido o preço
+  // avulso e não os de volume, e dizer "não veio" para a fábrica inteira seria falso
   const listas = [...porFornecedor.entries()].map(([fornecedor, custos]) => `
     <div>
       <span><strong>${escapar(fornecedor)}</strong><br />
-        ${custos.map((c) => `<span class="tag">${rotuloFaixa(c)} un · ${moeda(c.custo)}</span>`).join('')}</span>
+        ${custos.map((c) => `<span class="tag ${c.desatualizado ? 'tag-velha' : ''}"
+          ${c.desatualizado ? `title="Esta faixa não veio na última tabela da fábrica (preço de ${dataCurta(c.vigencia_inicio)})"` : ''}
+          >${c.desatualizado ? '⚠ ' : ''}${rotuloFaixa(c)} un · ${moeda(c.custo)}</span>`).join('')}</span>
     </div>`).join('') || '<div class="suave">Nenhum preço importado. Suba a tabela de preços da fábrica.</div>';
 
   const historico = item.historico_custo.slice(0, 8).map((h) => {
@@ -629,6 +660,12 @@ $('#busca').addEventListener('input', (evento) => {
 
 $('#filtro-montadora').addEventListener('change', (evento) => {
   estado.montadora = evento.target.value;
+  estado.pagina = 1;
+  carregarItens();
+});
+
+$('#filtro-variou').addEventListener('change', (evento) => {
+  estado.soVariou = evento.target.checked;
   estado.pagina = 1;
   carregarItens();
 });

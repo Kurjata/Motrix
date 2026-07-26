@@ -117,6 +117,22 @@ clique. Também dá para subir uma foto direto na peça.
 A foto **principal** é a que vai para a listagem e para o catálogo de apresentação; removendo
 a principal, a próxima assume. Fotos idênticas são deduplicadas por hash.
 
+### Variação de preço
+
+A lista tem uma coluna **Variação**: quanto o **melhor custo** da peça mudou desde a última vez
+(`▲ +9,5%`, `▼ -7,0%`, `estável`, ou `—` quando não há anterior). A conta é derivada do histórico,
+não guardada: `vw_itens_custo` expõe `preco_desde` (quando o conjunto de preços vigentes mudou) e
+`melhor_custo_anterior` (o menor custo que valia imediatamente antes daquela data).
+
+Ancorar no melhor custo é uma escolha: se uma fábrica reajusta mas outra segue mais barata, para
+quem compra não mudou nada. O reajuste continua registrado por faixa e por fornecedor no
+histórico da peça. O filtro **Só o que mudou de preço** (`variou=1`) isola quem realmente mudou.
+
+**Preço que a fábrica parou de cotar** é sinalizado, não encerrado: quando a tabela mais recente
+daquele fornecedor é mais nova que a última confirmação do preço, a data aparece em laranja com
+`⚠`. Para isso existe `item_custos.confirmado_em`, separado da vigência — tabela nova com preço
+igual **confirma** o preço sem abrir vigência nova, e sem essa coluna ele pareceria vencido.
+
 ### Preço por volume
 
 A tabela da fábrica costuma dizer que a peça custa X na unidade, Y a partir de 100 e Z a partir

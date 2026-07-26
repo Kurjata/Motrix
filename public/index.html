@@ -113,13 +113,14 @@
           <select id="filtro-montadora"><option value="">Todas as montadoras</option></select>
           <select id="filtro-fornecedor"><option value="">Todos os fornecedores</option></select>
           <input id="busca" type="search" placeholder="código, OEM, descrição ou aplicação..." />
+          <label class="inline"><input type="checkbox" id="filtro-variou" /> Só o que mudou de preço</label>
           <button id="nova-peca" type="button">+ Nova peça</button>
         </div>
       </div>
       <table id="tabela-itens">
         <thead>
           <tr><th></th><th>Código</th><th>Descrição</th><th>Fornecedor</th>
-              <th class="num">Custo</th><th class="num">Volume</th><th></th></tr>
+              <th class="num">Custo</th><th class="num">Volume</th><th class="num">Variação</th><th></th></tr>
         </thead>
         <tbody></tbody>
       </table>

@@ -3,7 +3,9 @@
 const express = require('express');
 const db = require('../db');
 const { normalizarCodigo } = require('../services/importService');
-const { historicoDoItem, custosVigentes, registrarCusto } = require('../services/custoService');
+const {
+  historicoDoItem, custosVigentes, registrarCusto, ultimaTabelaPorFornecedor,
+} = require('../services/custoService');
 const { chaveDe } = require('../services/aplicacoes');
 
 const router = express.Router({ mergeParams: true });
@@ -61,11 +63,19 @@ function montarItens(itens) {
   const custos = db
     .prepare(`
       SELECT c.id, c.item_id, c.custo, c.qtd_min, c.qtd_max, c.moeda, c.vigencia_inicio,
-             c.variacao_percentual, f.id AS fornecedor_id, f.nome AS fornecedor
+             c.confirmado_em, c.variacao_percentual, f.id AS fornecedor_id, f.nome AS fornecedor
         FROM item_custos c JOIN fornecedores f ON f.id = c.fornecedor_id
        WHERE c.item_id IN (${marcadores}) AND c.vigencia_fim IS NULL
        ORDER BY f.nome, c.qtd_min`)
     .all(...ids);
+
+  // um preco esta desatualizado quando aquela fabrica ja mandou tabela mais nova sem ele
+  const ultimaTabela = ultimaTabelaPorFornecedor(itens[0].catalogo_id);
+  const desatualizado = (custo) => {
+    const tabela = ultimaTabela.get(custo.fornecedor_id);
+    const confirmado = custo.confirmado_em || custo.vigencia_inicio;
+    return Boolean(tabela && confirmado && tabela > confirmado);
+  };
 
   const porItem = new Map(itens.map((i) => [i.id, {
     ...i,
@@ -76,15 +86,32 @@ function montarItens(itens) {
   for (const c of codigos) porItem.get(c.item_id).codigos.push(c);
   for (const a of aplicacoes) porItem.get(a.item_id).aplicacoes.push(a);
   for (const m of imagens) porItem.get(m.item_id).imagens.push({ ...m, url: `/media/${m.caminho}` });
-  for (const c of custos) porItem.get(c.item_id).custos.push(c);
+  for (const c of custos) {
+    porItem.get(c.item_id).custos.push({ ...c, desatualizado: desatualizado(c) });
+  }
 
   return [...porItem.values()].map((item) => {
     const custo = item.melhor_custo;
+    const anterior = item.melhor_custo_anterior;
     const venda = item.preco_venda;
+
+    // a variacao da peca e a do melhor custo: o que ele efetivamente pagaria.
+    // Se uma fabrica subiu mas outra segue mais barata, para ele nao mudou nada.
+    const variacao = custo != null && anterior
+      ? Number((((custo - anterior) / anterior) * 100).toFixed(2))
+      : null;
+
+    // o aviso segue o preco que a lista mostra na coluna Custo — que é o custo base
+    // quando existe, não o melhor custo
+    const exibido = item.custo_base ?? custo;
+    const sustenta = item.custos.find((c) => c.custo === exibido);
+
     return {
       ...item,
       descricao_completa: descricaoCompleta(item),
       margem_percentual: custo != null && venda ? Number((((venda - custo) / venda) * 100).toFixed(2)) : null,
+      variacao_custo: variacao,
+      preco_desatualizado: Boolean(sustenta?.desatualizado),
     };
   });
 }
@@ -131,6 +158,11 @@ router.get('/', (req, res) => {
   }
 
   if (req.query.sem_custo === '1') condicoes.push('i.melhor_custo IS NULL');
+
+  // "so o que mudou": peças cujo melhor custo é diferente do que valia antes
+  if (req.query.variou === '1') {
+    condicoes.push('i.melhor_custo_anterior IS NOT NULL AND i.melhor_custo <> i.melhor_custo_anterior');
+  }
 
   const where = `WHERE ${condicoes.join(' AND ')}`;
   const total = db.prepare(`SELECT COUNT(*) AS n FROM vw_itens_custo i ${where}`).get(...params).n;

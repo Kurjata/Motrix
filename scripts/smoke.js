@@ -132,6 +132,41 @@ async function main() {
   checar('preco lancado a mao vira faixa vigente',
     comCusto.custos.some((c) => c.qtd_min === 50 && c.custo === 31.5), comCusto.custos);
 
+  // ------------------------------------------------- variacao de preco e preco velho
+  const porCodigo = (lista) => new Map(lista.itens.map((i) => [i.codigo, i]));
+  const antes = porCodigo(await api(`${rotaItens}?limite=100`));
+
+  // FL-3010: uma fabrica, uma faixa. 21,40 (jan) -> 19,90 (jul) = -7,0%
+  checar('variacao aparece na peca de fabrica unica',
+    Math.abs(antes.get('FL-3010').variacao_custo + 7.01) < 0.05, antes.get('FL-3010').variacao_custo);
+
+  // PF-1001: a base da ACME subiu 9,5% em julho, mas o melhor custo segue 66,50 (ACME 200+).
+  // Pela regra escolhida, para quem compra volume nao mudou nada.
+  checar('reajuste em uma faixa nao mexe na variacao do melhor custo',
+    antes.get('PF-1001').variacao_custo === 0 && antes.get('PF-1001').melhor_custo === 66.5,
+    { variacao: antes.get('PF-1001').variacao_custo, melhor: antes.get('PF-1001').melhor_custo });
+
+  checar('peca de primeira importacao nao inventa variacao',
+    antes.get('CX-4400').variacao_custo === null, antes.get('CX-4400').variacao_custo);
+
+  // AM-2050 veio na tabela de julho com o MESMO preco: confirmado, nao desatualizado.
+  // E o caso que pega o falso positivo.
+  checar('preco repetido na tabela nova conta como confirmado',
+    antes.get('AM-2050').custos.some((c) => /ACME/i.test(c.fornecedor) && !c.desatualizado),
+    antes.get('AM-2050').custos.map((c) => ({ f: c.fornecedor, velho: c.desatualizado })));
+
+  // BU-5500 nao veio na tabela de julho da ACME
+  checar('peca ausente da tabela nova fica marcada como desatualizada',
+    antes.get('BU-5500').preco_desatualizado === true,
+    antes.get('BU-5500').custos.map((c) => ({ f: c.fornecedor, velho: c.desatualizado })));
+
+  const soVariou = await api(`${rotaItens}?variou=1&limite=100`);
+  checar('filtro "so o que mudou" traz apenas quem teve mudanca no melhor custo',
+    soVariou.itens.length > 0 && soVariou.itens.every((i) => i.variacao_custo !== null && i.variacao_custo !== 0),
+    soVariou.itens.map((i) => `${i.codigo} ${i.variacao_custo}%`));
+  checar('filtro "so o que mudou" deixa de fora a peca estavel',
+    !soVariou.itens.some((i) => i.codigo === 'PF-1001'));
+
   // ---------------------------------------------------------------- pdf e psd
   const pdf = await enviar(catalogo.id, 'fabrica-catalogo.pdf', {
     fornecedor: 'PDF Autopecas', vigencia: '2026-04-01',

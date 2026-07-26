@@ -113,6 +113,9 @@ CREATE TABLE IF NOT EXISTS item_custos (
   lote_minimo         REAL,
   vigencia_inicio     TEXT NOT NULL,
   vigencia_fim        TEXT,
+  -- data-base da ultima tabela em que este preco apareceu. Separado da vigencia porque tabela
+  -- nova com preco igual confirma o preco sem abrir vigencia nova: sem isso ele pareceria velho.
+  confirmado_em       TEXT,
   variacao_percentual REAL,        -- reajuste em relacao ao custo anterior do mesmo fornecedor
   arquivo_id          INTEGER REFERENCES arquivos(id) ON DELETE SET NULL,
   observacao          TEXT,
@@ -143,7 +146,10 @@ CREATE INDEX IF NOT EXISTS idx_imagens_item ON imagens(item_id);
 -- Visao de trabalho.
 -- custo_base   = o que se paga comprando pouco (faixa que comeca em 1 unidade)
 -- melhor_custo = o menor preco vigente em qualquer faixa, ou seja, comprando volume
-CREATE VIEW IF NOT EXISTS vw_itens_custo AS
+-- Recriada a cada carga: em banco que ja existe, CREATE VIEW IF NOT EXISTS manteria a versao
+-- antiga. View nao guarda dado, entao derrubar e recriar mantem banco e codigo em sincronia.
+DROP VIEW IF EXISTS vw_itens_custo;
+CREATE VIEW vw_itens_custo AS
 SELECT i.*,
        (SELECT MIN(c.custo) FROM item_custos c
          WHERE c.item_id = i.id AND c.vigencia_fim IS NULL AND c.qtd_min <= 1) AS custo_base,
@@ -155,5 +161,20 @@ SELECT i.*,
        (SELECT COUNT(DISTINCT c.fornecedor_id) FROM item_custos c
          WHERE c.item_id = i.id AND c.vigencia_fim IS NULL)                    AS qtd_fornecedores,
        (SELECT COUNT(*) FROM item_custos c
-         WHERE c.item_id = i.id AND c.vigencia_fim IS NULL AND c.qtd_min > 1)  AS qtd_faixas_volume
+         WHERE c.item_id = i.id AND c.vigencia_fim IS NULL AND c.qtd_min > 1)  AS qtd_faixas_volume,
+
+       -- ultima vez que o conjunto de precos vigentes desta peca mudou
+       (SELECT MAX(c.vigencia_inicio) FROM item_custos c
+         WHERE c.item_id = i.id AND c.vigencia_fim IS NULL)                    AS preco_desde,
+
+       -- melhor custo que valia imediatamente antes daquela data: e a base da comparacao.
+       -- Nulo na primeira importacao, quando nao existe nada anterior com que comparar.
+       (SELECT MIN(c.custo) FROM item_custos c
+         WHERE c.item_id = i.id
+           AND c.vigencia_inicio < (SELECT MAX(a.vigencia_inicio) FROM item_custos a
+                                     WHERE a.item_id = i.id AND a.vigencia_fim IS NULL)
+           AND (c.vigencia_fim IS NULL
+                OR c.vigencia_fim >= (SELECT MAX(a.vigencia_inicio) FROM item_custos a
+                                       WHERE a.item_id = i.id AND a.vigencia_fim IS NULL))
+       )                                                                       AS melhor_custo_anterior
   FROM itens i;

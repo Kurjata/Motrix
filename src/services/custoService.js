@@ -13,11 +13,19 @@ const stmt = {
   fecharVigencia: db.prepare('UPDATE item_custos SET vigencia_fim = ? WHERE id = ?'),
   inserir: db.prepare(`
     INSERT INTO item_custos (item_id, fornecedor_id, custo, qtd_min, qtd_max, moeda, codigo_fornecedor,
-                             prazo_dias, lote_minimo, vigencia_inicio, vigencia_fim, variacao_percentual,
-                             arquivo_id, observacao)
+                             prazo_dias, lote_minimo, vigencia_inicio, vigencia_fim, confirmado_em,
+                             variacao_percentual, arquivo_id, observacao)
     VALUES (@item_id, @fornecedor_id, @custo, @qtd_min, @qtd_max, @moeda, @codigo_fornecedor,
-            @prazo_dias, @lote_minimo, @vigencia_inicio, @vigencia_fim, @variacao_percentual,
-            @arquivo_id, @observacao)`),
+            @prazo_dias, @lote_minimo, @vigencia_inicio, @vigencia_fim, @confirmado_em,
+            @variacao_percentual, @arquivo_id, @observacao)`),
+  confirmar: db.prepare(`
+    UPDATE item_custos SET confirmado_em = ?
+     WHERE id = ? AND (confirmado_em IS NULL OR confirmado_em < ?)`),
+  ultimaTabela: db.prepare(`
+    SELECT fornecedor_id, MAX(COALESCE(vigencia, date(criado_em))) AS ultima_tabela
+      FROM arquivos
+     WHERE catalogo_id = ? AND fornecedor_id IS NOT NULL AND status = 'processado'
+     GROUP BY fornecedor_id`),
   historico: db.prepare(`
     SELECT c.*, f.nome AS fornecedor
       FROM item_custos c JOIN fornecedores f ON f.id = c.fornecedor_id
@@ -62,6 +70,7 @@ function registrarCusto(dados) {
     lote_minimo: dados.lote_minimo ?? null,
     vigencia_inicio: data,
     vigencia_fim: null,
+    confirmado_em: data,
     variacao_percentual: null,
     arquivo_id: dados.arquivo_id ?? null,
     observacao: dados.observacao ?? null,
@@ -73,7 +82,12 @@ function registrarCusto(dados) {
     return 'novo';
   }
 
-  if (Number(vigente.custo) === Number(dados.custo)) return 'inalterado';
+  if (Number(vigente.custo) === Number(dados.custo)) {
+    // preco igual nao abre vigencia nova, mas foi visto de novo: registrar a confirmacao,
+    // senao ele passaria a parecer desatualizado sem estar
+    stmt.confirmar.run(data, vigente.id, data);
+    return 'inalterado';
+  }
 
   if (data <= vigente.vigencia_inicio) {
     stmt.inserir.run({ ...base, vigencia_fim: vigente.vigencia_inicio });
@@ -88,4 +102,13 @@ function registrarCusto(dados) {
 const historicoDoItem = (itemId) => stmt.historico.all(itemId);
 const custosVigentes = (itemId) => stmt.vigentes.all(itemId);
 
-module.exports = { registrarCusto, historicoDoItem, custosVigentes, hoje };
+/**
+ * Data-base da tabela mais recente de cada fornecedor no catalogo.
+ * Preco confirmado antes dessa data e preco que a fabrica parou de cotar.
+ * @returns {Map<number, string>} fornecedor_id -> data
+ */
+function ultimaTabelaPorFornecedor(catalogoId) {
+  return new Map(stmt.ultimaTabela.all(catalogoId).map((l) => [l.fornecedor_id, l.ultima_tabela]));
+}
+
+module.exports = { registrarCusto, historicoDoItem, custosVigentes, ultimaTabelaPorFornecedor, hoje };
