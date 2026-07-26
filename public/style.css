@@ -192,3 +192,17 @@ tbody tr:hover { background: var(--realce); }
 label.inline { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 7px; }
 label.inline input { width: auto; }
 .precificar { border-top: 1px dashed var(--borda); padding-top: 12px; margin-top: 4px; }
+
+/* selo de versao: presente, mas discreto o bastante para nao disputar atencao */
+.versao {
+  position: fixed;
+  right: 12px;
+  bottom: 8px;
+  z-index: 30;
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--suave);
+  opacity: .35;
+  pointer-events: none;
+  user-select: none;
+}

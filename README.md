@@ -131,6 +131,15 @@ Cabeçalhos reconhecidos como faixa: `1 a 99`, `100-199`, `200+`, `Acima de 200`
 `A partir de 50`, `Preço 100 un`. Também funciona com colunas explícitas
 `Qtd mínima` / `Qtd máxima` + `Custo` (uma linha por faixa).
 
+### Versão na tela
+
+O canto inferior direito mostra a versão em uso (`v1.2`), em fonte apagada para não disputar
+atenção. O valor vem do `package.json` via `/api/health` — não existe número escrito à mão em
+lugar nenhum, então a tela nunca diverge do que foi empacotado.
+
+**Convenção:** cada alteração entregue sobe a casa menor — 1.2 → 1.3 → 1.4. O selo mostra
+`maior.menor`; a terceira casa do `package.json` fica reservada para correção de emergência.
+
 ### Tema claro e escuro
 
 O botão no cabeçalho alterna entre os dois. Enquanto você não escolher, o programa segue o tema do

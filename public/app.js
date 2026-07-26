@@ -163,6 +163,16 @@ async function carregarItens() {
   $('#proxima').disabled = estado.pagina >= paginas;
 }
 
+/** Selo de versao no rodape. Mostra maior.menor: 1.2.0 aparece como "v1.2". */
+async function carregarVersao() {
+  try {
+    const { versao } = await api('/api/health');
+    if (versao) $('#versao').textContent = `v${versao.split('.').slice(0, 2).join('.')}`;
+  } catch {
+    // sem versao o rodape fica vazio; nao e motivo para atrapalhar o carregamento
+  }
+}
+
 async function atualizarTudo() {
   await carregarCatalogos();
   await Promise.all([carregarFornecedores(), carregarMontadoras(), carregarItens()]);
@@ -633,4 +643,5 @@ $('#anterior').addEventListener('click', () => { estado.pagina--; carregarItens(
 $('#proxima').addEventListener('click', () => { estado.pagina++; carregarItens(); });
 
 pintarBotaoTema();
+carregarVersao();
 atualizarTudo().catch((erro) => mostrarAviso(erro.message, true));
