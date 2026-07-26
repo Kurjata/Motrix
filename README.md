@@ -235,6 +235,23 @@ GET    /api/catalogos/:id/exportar/xlsx                 (mesmos parâmetros)
 POST   /api/catalogos/:id/exportar/precificar           { margem, base, sobrescrever }
 ```
 
+## Manual de uso
+
+O manual em PDF fica em `docs/Manual - Catalogo Pecas Automotivas.pdf` — 19 páginas com passo a
+passo, exemplos numéricos e telas reais do programa. Ele é um documento à parte, não vai dentro
+do executável.
+
+Para regerar depois de mudar a interface (precisa do servidor no ar, para as capturas):
+
+```bash
+npm start
+npm run capturas && npm run manual
+```
+
+As capturas são feitas pelo Electron, sempre no mesmo tamanho e no tema claro, e o PDF sai do
+`printToPDF` — nada de gerador de PDF extra nem de editor de imagem. A fonte de display é a
+Bahnschrift (a DIN que acompanha o Windows).
+
 ## Demonstração
 
 Sobe um catálogo completo (planilhas + PDF + PSD), precifica com 45% e imprime os links:

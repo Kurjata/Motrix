@@ -15,6 +15,8 @@
     "desktop": "npm run preparar:desktop && electron .",
     "icone": "node scripts/gerar-icone.js",
     "dist": "npm run icone && npm run preparar:desktop && electron-builder --win",
+    "capturas": "electron scripts/gerar-capturas.js",
+    "manual": "electron scripts/gerar-manual.js",
     "preparar:desktop": "electron-rebuild -f --only better-sqlite3",
     "preparar:node": "npm rebuild better-sqlite3"
   },

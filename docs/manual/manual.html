@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Manual de uso — Catálogo · Peças Automotivas</title>
+<style>
+  /* ------------------------------------------------------------------ tokens
+     Paleta e tipografia de manual técnico: tinta quase preta, azul de impressão,
+     hairlines cinza-aço. A família de display é a DIN que acompanha o Windows,
+     a mesma linguagem das placas e desenhos técnicos do setor. */
+  :root {
+    --tinta: #101418;
+    --azul: #1f5fd0;
+    --aco: #66707c;
+    --linha: #cfd6df;
+    --painel: #f4f6f9;
+    --ambar: #9a5410;
+    --ambar-fundo: #fdf5ea;
+    --verde: #1c6b45;
+    --display: "Bahnschrift SemiCondensed", "Bahnschrift", "DIN Alternate", "Segoe UI Semibold", sans-serif;
+    --texto: "Segoe UI", Candara, system-ui, sans-serif;
+    --mono: Consolas, "Cascadia Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    margin: 0;
+    font-family: var(--texto);
+    font-size: 10.5pt;
+    line-height: 1.58;
+    color: var(--tinta);
+  }
+
+  p { margin: 0 0 9pt; }
+  strong { font-weight: 600; }
+  code { font-family: var(--mono); font-size: .92em; background: var(--painel); padding: 1px 4px; border-radius: 3px; }
+
+  /* ------------------------------------------------------------------ capa */
+  /* sem altura fixa: com flex + margin-top:auto a legenda do esquema caía fora da página */
+  .capa { break-after: page; }
+
+  .capa-topo { display: flex; justify-content: space-between; align-items: flex-start;
+               border-bottom: 2.5pt solid var(--tinta); padding-bottom: 7pt; }
+  .capa-topo .produto { font-family: var(--display); font-size: 15pt; font-weight: 600;
+                        letter-spacing: .14em; text-transform: uppercase; }
+  .capa-topo .doc { font-family: var(--display); font-size: 8.5pt; letter-spacing: .2em;
+                    text-transform: uppercase; color: var(--aco); text-align: right; line-height: 1.5; }
+
+  .capa h1 { font-family: var(--display); font-weight: 600; font-size: 44pt; line-height: .98;
+             letter-spacing: -.005em; margin: 26mm 0 0; max-width: 18ch; }
+  .capa h1 em { font-style: normal; color: var(--azul); }
+  .capa .promessa { font-size: 12.5pt; line-height: 1.5; color: var(--aco); max-width: 46ch; margin-top: 7mm; }
+
+  .esquema { margin-top: 30mm; break-inside: avoid; }
+  .esquema svg { width: 100%; height: auto; display: block; }
+  .esquema-legenda { display: flex; gap: 6mm; margin-top: 4mm; border-top: .75pt solid var(--linha); padding-top: 3mm; }
+  .esquema-legenda div { flex: 1; font-size: 8.5pt; line-height: 1.45; color: var(--aco); }
+  .esquema-legenda b { display: block; font-family: var(--display); font-size: 9pt; letter-spacing: .08em;
+                       text-transform: uppercase; color: var(--tinta); }
+
+  /* --------------------------------------------------------------- índice */
+  .indice { break-after: page; }
+  .indice ol { list-style: none; margin: 0; padding: 0; }
+  .indice li { display: flex; align-items: baseline; gap: 4mm; padding: 3.4mm 0;
+               border-bottom: .75pt solid var(--linha); }
+  .indice .n { font-family: var(--display); font-size: 11pt; color: var(--azul); width: 8mm; font-variant-numeric: tabular-nums; }
+  .indice .t { font-family: var(--display); font-size: 13pt; letter-spacing: .01em; }
+  .indice .d { font-size: 9.5pt; color: var(--aco); margin-left: auto; text-align: right; max-width: 62%; }
+
+  /* --------------------------------------------------------------- seções */
+  .secao { break-before: page; }
+  .secao-cabeca { border-bottom: 1.5pt solid var(--tinta); padding-bottom: 4mm; margin-bottom: 7mm; }
+  .secao-cabeca .ref { font-family: var(--display); font-size: 9pt; letter-spacing: .22em;
+                       text-transform: uppercase; color: var(--azul); display: block; margin-bottom: 1.5mm; }
+  .secao-cabeca h2 { font-family: var(--display); font-weight: 600; font-size: 27pt; line-height: 1.05;
+                     margin: 0; letter-spacing: -.005em; }
+  .secao-cabeca .sumario { font-size: 11pt; color: var(--aco); margin: 2.5mm 0 0; max-width: 58ch; }
+
+  h3 { font-family: var(--display); font-size: 14pt; font-weight: 600; margin: 8mm 0 2.5mm; }
+  h3:first-of-type { margin-top: 0; }
+  h4 { font-family: var(--display); font-size: 11.5pt; font-weight: 600; margin: 0 0 1mm; }
+
+  /* --------------------------------------------------------------- passos */
+  .passos { list-style: none; counter-reset: passo; margin: 0; padding: 0; }
+  .passos > li {
+    counter-increment: passo;
+    position: relative;
+    padding: 0 0 6mm 14mm;
+    break-inside: avoid;
+  }
+  .passos > li::before {
+    content: counter(passo, decimal-leading-zero);
+    position: absolute; left: 0; top: -1mm;
+    font-family: var(--display); font-size: 15pt; font-weight: 600; color: var(--azul);
+    font-variant-numeric: tabular-nums;
+  }
+  /* o fio liga os passos: a ordem aqui é real, não decoração */
+  .passos > li::after {
+    content: ""; position: absolute; left: 4.4mm; top: 7mm; bottom: 1mm;
+    border-left: .75pt solid var(--linha);
+  }
+  .passos > li:last-child::after { display: none; }
+  .passos p { margin-bottom: 4pt; }
+
+  /* -------------------------------------------------------------- figuras */
+  figure { margin: 5mm 0 6mm; break-inside: avoid; }
+  figure img { display: block; width: 100%; border: .75pt solid var(--linha); border-radius: 2pt; }
+  figure.estreita { max-width: 96mm; }
+  figure.media { max-width: 130mm; }
+  figcaption { font-size: 8.5pt; color: var(--aco); margin-top: 2mm; line-height: 1.45; }
+  figcaption .fig { font-family: var(--display); letter-spacing: .12em; text-transform: uppercase;
+                    color: var(--tinta); margin-right: 2mm; }
+
+  .dupla { display: flex; gap: 7mm; align-items: flex-start; break-inside: avoid; }
+  .dupla > figure { margin-top: 0; flex: 0 0 88mm; }
+  .dupla > div { flex: 1; }
+
+  /* -------------------------------------------------------------- tabelas */
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 4mm 0 6mm; break-inside: avoid; }
+  th, td { text-align: left; padding: 2.6mm 3mm; border-bottom: .75pt solid var(--linha); vertical-align: top; }
+  thead th { font-family: var(--display); font-size: 8.5pt; letter-spacing: .12em; text-transform: uppercase;
+             color: #fff; background: var(--tinta); border-bottom: 0; }
+  tbody tr:nth-child(even) { background: var(--painel); }
+  td code { background: transparent; padding: 0; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+  /* --------------------------------------------------------------- caixas */
+  .nota, .atencao, .exemplo { padding: 4mm 5mm; border-radius: 2pt; margin: 4mm 0 6mm; break-inside: avoid; font-size: 10pt; }
+  .nota { background: var(--painel); border-left: 2.5pt solid var(--azul); }
+  .atencao { background: var(--ambar-fundo); border-left: 2.5pt solid var(--ambar); }
+  .exemplo { border: .75pt solid var(--linha); border-left: 2.5pt solid var(--verde); }
+  .nota .rotulo, .atencao .rotulo, .exemplo .rotulo {
+    display: block; font-family: var(--display); font-size: 8.5pt; letter-spacing: .16em;
+    text-transform: uppercase; margin-bottom: 1.5mm;
+  }
+  .nota .rotulo { color: var(--azul); }
+  .atencao .rotulo { color: var(--ambar); }
+  .exemplo .rotulo { color: var(--verde); }
+  .nota p:last-child, .atencao p:last-child, .exemplo p:last-child { margin-bottom: 0; }
+
+  .conta { font-family: var(--mono); font-size: 9.5pt; background: var(--painel); padding: 3mm 4mm;
+           border-radius: 2pt; margin: 3mm 0; white-space: pre-line; line-height: 1.7; }
+
+  /* -------------------------------------------------------- glossário e faq */
+  .glossario { border-top: 1.5pt solid var(--tinta); }
+  .glossario > div { display: flex; gap: 6mm; padding: 3.5mm 0; border-bottom: .75pt solid var(--linha);
+                     break-inside: avoid; }
+  .glossario dt { flex: 0 0 42mm; font-family: var(--display); font-size: 11.5pt; font-weight: 600; margin: 0; }
+  .glossario dd { margin: 0; flex: 1; font-size: 10pt; }
+  .glossario .exemplo-inline { display: block; font-family: var(--mono); font-size: 8.8pt; color: var(--aco); margin-top: 1mm; }
+
+  .faq > div { break-inside: avoid; padding: 0 0 5mm; }
+  .faq h4 { color: var(--tinta); }
+  .faq h4::before { content: "› "; color: var(--azul); }
+
+  .fim { margin-top: 8mm; border-top: 1.5pt solid var(--tinta); padding-top: 4mm;
+         font-family: var(--display); font-size: 9pt; letter-spacing: .16em; text-transform: uppercase; color: var(--aco); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================== capa -->
+<div class="capa">
+  <div class="capa-topo">
+    <div class="produto">Catálogo · Peças&nbsp;Automotivas</div>
+    <div class="doc">Manual de uso<br />Versão 1.2</div>
+  </div>
+
+  <h1>Da planilha da fábrica ao <em>catálogo do cliente</em>.</h1>
+  <p class="promessa">
+    Este manual mostra, passo a passo, como transformar as tabelas que as fábricas mandam
+    em um catálogo seu — com foto, aplicação, código equivalente e preço sob controle.
+  </p>
+
+  <div class="esquema">
+    <svg viewBox="0 0 720 190" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label="Esquema: arquivos das fábricas entram, o programa lê e consolida, e saem catálogo e planilha">
+      <defs>
+        <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#101418" />
+        </marker>
+        <style>
+          .cx { fill: none; stroke: #101418; stroke-width: 1.1; }
+          .hair { stroke: #cfd6df; stroke-width: .8; }
+          .fio { stroke: #101418; stroke-width: 1.1; marker-end: url(#seta); }
+          .rot { font-family: "Bahnschrift SemiCondensed", sans-serif; font-size: 11px;
+                 letter-spacing: .1em; text-transform: uppercase; fill: #101418; }
+          .peq { font-family: "Bahnschrift SemiCondensed", sans-serif; font-size: 9px;
+                 letter-spacing: .08em; fill: #66707c; }
+          .cham { font-family: "Bahnschrift SemiCondensed", sans-serif; font-size: 10px;
+                  font-weight: 600; fill: #1f5fd0; }
+          .miolo { fill: #f4f6f9; stroke: #101418; stroke-width: 1.4; }
+        </style>
+      </defs>
+
+      <!-- entradas: as folhas empilhadas evocam as tabelas que chegam de cada fábrica -->
+      <g>
+        <rect class="cx" x="8" y="34" width="86" height="54" rx="2" />
+        <rect class="cx" x="14" y="40" width="86" height="54" rx="2" />
+        <rect class="miolo" x="20" y="46" width="86" height="54" rx="2" />
+        <line class="hair" x1="29" y1="62" x2="97" y2="62" />
+        <line class="hair" x1="29" y1="72" x2="97" y2="72" />
+        <line class="hair" x1="29" y1="82" x2="80" y2="82" />
+        <text class="rot" x="20" y="122">Planilha · PDF · Word · PSD</text>
+        <text class="peq" x="20" y="136">o que a fábrica manda</text>
+        <text class="cham" x="20" y="26">01</text>
+      </g>
+
+      <line class="fio" x1="118" y1="73" x2="188" y2="73" />
+
+      <!-- nucleo: leitura e consolidacao -->
+      <g>
+        <rect class="miolo" x="196" y="30" width="150" height="86" rx="2" />
+        <line class="hair" x1="196" y1="58" x2="346" y2="58" />
+        <text class="rot" x="208" y="50">Leitura</text>
+        <text class="peq" x="208" y="76">códigos · descrição</text>
+        <text class="peq" x="208" y="90">aplicação · preço</text>
+        <text class="peq" x="208" y="104">fotos</text>
+        <text class="rot" x="196" y="136">Uma peça só</text>
+        <text class="peq" x="196" y="150">ainda que venha de 3 fábricas</text>
+        <text class="cham" x="196" y="22">02</text>
+      </g>
+
+      <line class="fio" x1="358" y1="73" x2="428" y2="73" />
+
+      <!-- consolidado -->
+      <g>
+        <rect class="miolo" x="436" y="30" width="106" height="86" rx="2" />
+        <circle class="cx" cx="462" cy="56" r="12" />
+        <line class="hair" x1="484" y1="50" x2="530" y2="50" />
+        <line class="hair" x1="484" y1="60" x2="524" y2="60" />
+        <line class="hair" x1="448" y1="82" x2="530" y2="82" />
+        <line class="hair" x1="448" y1="96" x2="512" y2="96" />
+        <text class="rot" x="436" y="136">Seu catálogo</text>
+        <text class="peq" x="436" y="150">revisado por você</text>
+        <text class="cham" x="436" y="22">03</text>
+      </g>
+
+      <line class="fio" x1="554" y1="60" x2="624" y2="42" />
+      <line class="fio" x1="554" y1="86" x2="624" y2="104" />
+
+      <!-- saidas -->
+      <g>
+        <rect class="cx" x="632" y="18" width="76" height="46" rx="2" />
+        <text class="peq" x="640" y="40">CATÁLOGO</text>
+        <text class="peq" x="640" y="54">PDF · cliente</text>
+        <rect class="cx" x="632" y="86" width="76" height="46" rx="2" />
+        <text class="peq" x="640" y="108">PLANILHA</text>
+        <text class="peq" x="640" y="122">XLSX · interno</text>
+        <text class="cham" x="632" y="10">04</text>
+      </g>
+    </svg>
+
+    <div class="esquema-legenda">
+      <div><b>01 · Entra</b>Arquivo de cada fábrica, no formato que ela usa.</div>
+      <div><b>02 · Lê</b>O programa acha as colunas e junta a mesma peça.</div>
+      <div><b>03 · Você revisa</b>Corrige descrição, foto e aplicação.</div>
+      <div><b>04 · Sai</b>Catálogo para o cliente e planilha para você.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ índice -->
+<section class="indice">
+  <div class="secao-cabeca">
+    <span class="ref">Sumário</span>
+    <h2>Neste manual</h2>
+  </div>
+  <ol>
+    <li><span class="n">01</span><span class="t">O que o programa faz</span><span class="d">o problema que ele resolve</span></li>
+    <li><span class="n">02</span><span class="t">As palavras que ele usa</span><span class="d">peça, aplicação, DE‑PARA, faixa de volume</span></li>
+    <li><span class="n">03</span><span class="t">Primeiros passos</span><span class="d">do zero ao primeiro catálogo</span></li>
+    <li><span class="n">04</span><span class="t">Importar os arquivos da fábrica</span><span class="d">formatos, fornecedor e data-base</span></li>
+    <li><span class="n">05</span><span class="t">A lista de peças</span><span class="d">ler as colunas, filtrar e procurar</span></li>
+    <li><span class="n">06</span><span class="t">Editar uma peça</span><span class="d">dados, fotos, aplicação, equivalências</span></li>
+    <li><span class="n">07</span><span class="t">Cadastrar peça à mão</span><span class="d">a peça que não veio em planilha</span></li>
+    <li><span class="n">08</span><span class="t">Preço, custo e volume</span><span class="d">o coração do sistema</span></li>
+    <li><span class="n">09</span><span class="t">Exportar o catálogo</span><span class="d">para o cliente e para uso interno</span></li>
+    <li><span class="n">10</span><span class="t">Seus dados e o backup</span><span class="d">onde ficam e como copiar</span></li>
+    <li><span class="n">11</span><span class="t">Quando algo dá errado</span><span class="d">os casos que aparecem de verdade</span></li>
+  </ol>
+
+  <div class="nota">
+    <span class="rotulo">Como ler este manual</span>
+    <p>Se você só quer começar a usar, vá direto para a seção <strong>03 · Primeiros passos</strong>
+    e volte depois. As seções 01 e 02 explicam o raciocínio do programa — valem quinze minutos
+    quando algo não sair como você esperava.</p>
+  </div>
+</section>
+
+<!-- =============================================================== 01 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 01</span>
+    <h2>O que o programa faz</h2>
+    <p class="sumario">Ele resolve um problema de organização que nenhuma planilha isolada resolve.</p>
+  </div>
+
+  <h3>O problema</h3>
+  <p>Cada fábrica manda a tabela do jeito dela: uma em Excel com dez colunas, outra em PDF,
+  outra em Word com foto no meio. A mesma peça aparece com código diferente em cada uma.
+  O preço muda de mês em mês, e a tabela nova substitui a antiga — que vai para o lixo levando
+  junto a informação de quanto aquela peça custava antes.</p>
+
+  <p>Resultado: você sabe o preço de hoje, mas não sabe se subiu, quanto subiu, nem qual
+  fábrica está mais barata para a quantidade que você costuma comprar.</p>
+
+  <h3>O que o programa faz com isso</h3>
+  <table>
+    <thead><tr><th style="width:38%">Ele faz</th><th>Na prática</th></tr></thead>
+    <tbody>
+      <tr><td>Lê o arquivo da fábrica</td><td>Planilha, PDF, Word e PSD. Acha o cabeçalho e reconhece as colunas sozinho.</td></tr>
+      <tr><td>Junta a mesma peça</td><td>Três tabelas de três fábricas viram <strong>uma peça</strong> com três preços.</td></tr>
+      <tr><td>Guarda o histórico</td><td>Toda tabela nova que você sobe cria um registro de reajuste, com a variação em %.</td></tr>
+      <tr><td>Deixa você revisar</td><td>Descrição, foto, aplicação e código equivalente ficam do seu jeito, não do jeito da fábrica.</td></tr>
+      <tr><td>Monta o catálogo</td><td>Um documento de apresentação com foto e preço de venda, pronto para virar PDF.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="nota">
+    <span class="rotulo">A ideia por trás</span>
+    <p>O programa foi construído em cima de uma aposta: o que mais vale no seu negócio é
+    <strong>saber quanto cada peça custa em cada fábrica, ao longo do tempo</strong>. É por isso
+    que o preço não é um campo que você sobrescreve — é um histórico que só cresce.</p>
+  </div>
+</section>
+
+<!-- =============================================================== 02 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 02</span>
+    <h2>As palavras que ele usa</h2>
+    <p class="sumario">Seis palavras. Entendendo estas, o resto da tela se explica sozinho.</p>
+  </div>
+
+  <dl class="glossario">
+    <div>
+      <dt>Catálogo</dt>
+      <dd>O agrupamento de trabalho. Você pode ter um por cliente, por linha de produto ou um só
+      para tudo. Cada catálogo tem suas peças, seus arquivos e seus fornecedores.
+      <span class="exemplo-inline">ex.: “Linha de suspensão — 2026”</span></dd>
+    </div>
+    <div>
+      <dt>Peça</dt>
+      <dd>A unidade do catálogo, identificada pelo <strong>seu</strong> código. Ela existe uma única
+      vez, mesmo que tenha chegado por três arquivos diferentes.
+      <span class="exemplo-inline">ex.: PF-1001 · Pastilha de freio dianteira</span></dd>
+    </div>
+    <div>
+      <dt>Aplicação</dt>
+      <dd>Em que veículo a peça serve: montadora, modelo, motor, versão e faixa de ano.
+      Uma peça pode ter várias — e é por isso que ela aparece em mais de uma seção do catálogo.
+      <span class="exemplo-inline">ex.: VOLKSWAGEN · FOX 1.6 COMFORTLINE · 2015 a 2017</span></dd>
+    </div>
+    <div>
+      <dt>Código equivalente</dt>
+      <dd>O mesmo item chamado por outro nome. O programa guarda três tipos: <code>de</code> (o código
+      original, da montadora ou do concorrente), <code>para</code> (o seu código interno) e
+      <code>similar</code>. É o que faz a busca encontrar a peça pelo código que o cliente falou.
+      <span class="exemplo-inline">ex.: cliente pede 93312507 → você vende PF-1001</span></dd>
+    </div>
+    <div>
+      <dt>Fornecedor</dt>
+      <dd>A fábrica que cota a peça. Todo preço de custo pertence a um fornecedor — não existe
+      custo solto no sistema.
+      <span class="exemplo-inline">ex.: ACME Autopeças, BETA Distribuidora</span></dd>
+    </div>
+    <div>
+      <dt>Faixa de volume</dt>
+      <dd>O preço muda conforme a quantidade comprada. Cada faixa é um preço próprio, com
+      vigência e histórico próprios.
+      <span class="exemplo-inline">ex.: 1+ un R$ 86,40 · 100–199 un R$ 71,00 · 200+ un R$ 66,50</span></dd>
+    </div>
+  </dl>
+</section>
+
+<!-- =============================================================== 03 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 03</span>
+    <h2>Primeiros passos</h2>
+    <p class="sumario">Cinco movimentos entre abrir o programa pela primeira vez e ter um catálogo pronto para mandar.</p>
+  </div>
+
+  <figure>
+    <img src="img/tela-principal.png" alt="Tela principal do programa, com os blocos de importação, catálogo de apresentação e a lista de peças" />
+    <figcaption><span class="fig">Fig. 03.1</span> A tela é uma só, dividida em três blocos, na ordem do trabalho:
+      importar em cima, gerar o catálogo no meio, e a lista de peças embaixo.</figcaption>
+  </figure>
+
+  <ol class="passos">
+    <li>
+      <h4>Abra o programa</h4>
+      <p>Pelo atalho <strong>Catálogo - Peças Automotivas</strong> na Área de Trabalho. Na primeira vez,
+      o Windows mostra um aviso azul de proteção — clique em <em>Mais informações</em> e depois em
+      <em>Executar assim mesmo</em>. Isso acontece porque o programa não tem assinatura digital paga;
+      não é vírus, e o aviso não volta a aparecer.</p>
+    </li>
+    <li>
+      <h4>Crie um catálogo</h4>
+      <p>Botão <strong>Novo catálogo</strong>, no alto à direita. Dê um nome que faça sentido para você
+      — “Suspensão 2026”, “Cliente Oficina Central”. Você pode ter vários e trocar pela lista ao lado.</p>
+    </li>
+    <li>
+      <h4>Importe a tabela de uma fábrica</h4>
+      <p>No bloco <strong>Importar arquivo</strong>: escreva o nome da fábrica, escolha o arquivo e clique
+      em <strong>Importar</strong>. Em segundos aparece o resumo: quantas peças entraram, quantas eram novas,
+      quantos preços e quantas fotos ele achou.</p>
+    </li>
+    <li>
+      <h4>Confira e ajuste</h4>
+      <p>Clique em <strong>Editar</strong> em qualquer linha da lista. Ali você corrige a descrição, escolhe
+      a foto principal, acerta a aplicação e adiciona o código que a fábrica não informou.</p>
+    </li>
+    <li>
+      <h4>Gere o catálogo</h4>
+      <p>No bloco <strong>Catálogo de apresentação</strong>: dê um título, confira as opções e clique em
+      <strong>Abrir catálogo</strong>. Ele abre no seu navegador; ali é <code>Ctrl+P</code> → <em>Salvar como PDF</em>
+      e está pronto para mandar no WhatsApp ou por e-mail.</p>
+    </li>
+  </ol>
+
+</section>
+
+<!-- =============================================================== 04 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 04</span>
+    <h2>Importar os arquivos da fábrica</h2>
+    <p class="sumario">O mesmo lugar serve para o catálogo de peças e para a tabela de preços.</p>
+  </div>
+
+  <figure>
+    <img src="img/card-importar.png" alt="Bloco de importação, com os campos fornecedor, data-base e arquivos" />
+    <figcaption><span class="fig">Fig. 04.1</span> Três campos, e só o arquivo é obrigatório.</figcaption>
+  </figure>
+
+  <h3>O que preencher</h3>
+  <table>
+    <thead><tr><th style="width:30%">Campo</th><th>Para que serve</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Fornecedor</strong></td>
+          <td>De qual fábrica é aquela tabela. Se ainda não existir, ele cria na hora. Escrever
+          “ACME Autopeças Ltda” e depois “ACME Autopeças” <em>não</em> gera dois cadastros —
+          o programa entende que é a mesma.</td></tr>
+      <tr><td><strong>Data-base</strong></td>
+          <td>A data de vigência daquela tabela. É ela que datA o reajuste: se você sobe a tabela de
+          março e depois a de julho, o programa fecha a vigência antiga em julho e calcula a variação.
+          Em branco, ele usa a data de hoje. Em arquivo sem preço, não tem efeito.</td></tr>
+      <tr><td><strong>Arquivos</strong></td>
+          <td>Um ou vários de uma vez. Não existe campo dizendo “isto é preço” ou “isto é catálogo”:
+          as colunas do arquivo já dizem o que ele é.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>O que ele consegue ler de cada formato</h3>
+  <table>
+    <thead><tr><th style="width:24%">Formato</th><th>O que aproveita</th></tr></thead>
+    <tbody>
+      <tr><td><code>.xlsx</code> <code>.xlsm</code></td><td>Tabelas e as fotos ancoradas na linha da peça — a foto vai direto para a peça certa.</td></tr>
+      <tr><td><code>.docx</code></td><td>Tabelas e as fotos embutidas. As fotos entram como “sem peça”, para você vincular.</td></tr>
+      <tr><td><code>.pdf</code></td><td>Reconstrói a tabela pela posição do texto na página, e traz as imagens.</td></tr>
+      <tr><td><code>.psd</code></td><td>A arte da peça e o texto das camadas (código, descrição, aplicação).</td></tr>
+      <tr><td><code>.doc</code> <code>.xls</code> antigos</td><td>São guardados, mas não lidos. Abra no Office e salve como <code>.docx</code> / <code>.xlsx</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="atencao">
+    <span class="rotulo">PDF que é foto não dá</span>
+    <p>Se o PDF foi <strong>escaneado</strong> — ou seja, cada página é uma imagem, e você não consegue
+    selecionar o texto com o mouse — o programa não tem texto para ler. As peças não são criadas e as
+    imagens vão para a galeria de fotos sem peça. Nesse caso, peça a tabela em Excel para a fábrica:
+    é mais rápido que digitar.</p>
+  </div>
+
+  <h3>Se ele não reconhecer as colunas</h3>
+  <p>O programa procura o cabeçalho nas primeiras linhas e entende sinônimos comuns do setor —
+  “Código”, “Referência”, “Cód. Original”, “Aplicação”, “Custo”, “Preço de Venda”, “Montadora”.
+  Coluna que ele não reconhece <strong>não é descartada</strong>: fica guardada junto da peça.</p>
+  <p>Quando a importação não traz nada, quase sempre é uma destas três causas: a planilha tem
+  o cabeçalho em imagem em vez de texto, tem células mescladas atravessando as colunas, ou é
+  um PDF escaneado. Abrir a planilha e apagar as linhas decorativas acima do cabeçalho resolve
+  a maioria dos casos.</p>
+</section>
+
+<!-- =============================================================== 05 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 05</span>
+    <h2>A lista de peças</h2>
+    <p class="sumario">Onde você passa a maior parte do tempo. Vale entender as duas colunas de preço.</p>
+  </div>
+
+  <figure>
+    <img src="img/lista-pecas.png" alt="Lista de peças com colunas de código, descrição, fornecedor, custo e volume" />
+    <figcaption><span class="fig">Fig. 05.1</span> Cada linha é uma peça consolidada. A miniatura à esquerda é a foto principal.</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th style="width:26%">Coluna</th><th>O que mostra</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Código</strong></td><td>O seu código, o principal da peça.</td></tr>
+      <tr><td><strong>Descrição</strong></td><td>Montadora, o que é a peça e a aplicação, montados numa frase só — é este texto que vai para o catálogo.</td></tr>
+      <tr><td><strong>Fornecedor</strong></td><td>Quem tem o menor preço vigente. O <code>(+1)</code> ao lado indica que existe outra fábrica cotando a mesma peça.</td></tr>
+      <tr><td><strong>Custo</strong></td><td>O que você paga <strong>comprando pouco</strong> (faixa de 1 unidade).</td></tr>
+      <tr><td><strong>Volume</strong></td><td>O menor preço que existe em qualquer faixa, ou seja, comprando quantidade.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="nota">
+    <span class="rotulo">Por que duas colunas de preço</span>
+    <p>Porque elas costumam apontar para fábricas diferentes. Uma fábrica pode ser caríssima na
+    unidade e a mais barata a partir de 200 peças. Se você olhar só um número, escolhe o fornecedor
+    errado para o jeito que você compra.</p>
+  </div>
+
+  <h3>Procurar e filtrar</h3>
+  <p>A busca aceita <strong>qualquer</strong> código da peça — o seu, o da montadora, o do concorrente — e
+  também descrição, modelo e montadora. Ela ignora pontos e traços: procurar por
+  <code>933-125.07</code> encontra a peça cadastrada como <code>93312507</code>.</p>
+  <p>Os dois seletores ao lado filtram por <strong>montadora</strong> e por <strong>fornecedor</strong>. Eles valem
+  também para a exportação: filtrando VOLKSWAGEN, o catálogo que você gerar sai só com Volkswagen.</p>
+</section>
+
+<!-- =============================================================== 06 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 06</span>
+    <h2>Editar uma peça</h2>
+    <p class="sumario">O painel lateral reúne tudo sobre uma peça em cinco blocos.</p>
+  </div>
+
+  <div class="dupla">
+    <figure class="estreita">
+      <img src="img/painel-peca.png" alt="Painel lateral de edição de uma peça" />
+      <figcaption><span class="fig">Fig. 06.1</span> Clique em <strong>Editar</strong> na linha, ou em qualquer
+        lugar da linha, para abrir.</figcaption>
+    </figure>
+    <div>
+      <h4>Dados</h4>
+      <p>Código, marca da peça, descrição, quantidade, unidade e observação. Clique em
+      <strong>Salvar</strong> para gravar.</p>
+
+      <h4>Fotos</h4>
+      <p>Envie uma foto sua, escolha qual é a <strong>principal</strong> (a que vai para a listagem e para o
+      catálogo) ou remova. Se o programa extraiu fotos de arquivos e não soube a qual peça pertencem,
+      elas aparecem aqui em <strong>Fotos sem peça</strong> — um clique em “é desta peça” resolve.</p>
+
+      <h4>Aplicação</h4>
+      <p>Adicione quantos veículos a peça servir. Montadora, modelo, motor, versão e a faixa de ano.</p>
+
+      <h4>Códigos equivalentes</h4>
+      <p>Todo código pelo qual a peça pode ser pedida. Escolha o tipo: do fabricante/OEM, similar
+      ou interno.</p>
+
+      <h4>Preço e histórico</h4>
+      <p>Os preços vigentes de cada fábrica, por faixa, e o histórico de reajuste embaixo.</p>
+    </div>
+  </div>
+
+  <div class="nota">
+    <span class="rotulo">O que você edita não é sobrescrito</span>
+    <p>Quando você subir a tabela nova daquela fábrica, o programa <strong>completa</strong> o que está
+    vazio e não mexe no que você escreveu. A descrição que você melhorou continua lá.</p>
+  </div>
+</section>
+
+<!-- =============================================================== 07 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 07</span>
+    <h2>Cadastrar peça à mão</h2>
+    <p class="sumario">Para a peça que não veio em planilha nenhuma.</p>
+  </div>
+
+  <div class="dupla">
+    <figure class="estreita">
+      <img src="img/nova-peca.png" alt="Formulário de cadastro de uma nova peça" />
+      <figcaption><span class="fig">Fig. 07.1</span> Botão <strong>+ Nova peça</strong>, ao lado da busca.</figcaption>
+    </figure>
+    <div>
+      <p>Sempre existe a peça avulsa: a que o vendedor passou por telefone, a que você quer incluir
+      antes de a tabela chegar. Preencha o <strong>código</strong> e a <strong>descrição</strong> — só um dos dois
+      já basta — e, se quiser, a <strong>aplicação</strong> no mesmo formulário.</p>
+
+      <p>Ao clicar em <strong>Criar peça</strong>, o painel reabre no modo de edição, já com a peça criada.
+      A partir dali ela é igual a qualquer outra: aceita foto, código equivalente, preço por
+      fornecedor e faixa de volume, e entra no catálogo exportado.</p>
+
+      <div class="atencao">
+        <span class="rotulo">Código repetido</span>
+        <p>Se o código já existir naquele catálogo, o programa avisa e pergunta se você quer
+        <strong>abrir a peça existente</strong> — em vez de criar uma segunda peça com o mesmo código.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 08 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 08</span>
+    <h2>Preço, custo e volume</h2>
+    <p class="sumario">A parte que dá vantagem competitiva. Vale ler com atenção.</p>
+  </div>
+
+  <h3>Custo é sempre de alguém</h3>
+  <p>Não existe “o custo da peça” no programa. Existe <strong>o custo daquela peça, naquela fábrica,
+  naquela faixa de quantidade, naquela data</strong>. É essa precisão que permite comparar fornecedor
+  e enxergar reajuste.</p>
+
+  <figure class="media">
+    <img src="img/bloco-precos.png" alt="Bloco de preços mostrando três faixas de volume da ACME e uma da BETA" />
+    <figcaption><span class="fig">Fig. 08.1</span> A mesma peça, duas fábricas. A ACME tem três faixas; a BETA, uma.</figcaption>
+  </figure>
+
+  <div class="exemplo">
+    <span class="rotulo">Exemplo real da figura acima</span>
+    <div class="conta">ACME    1+ un ......... R$ 86,40
+ACME    100–199 un .... R$ 71,00
+ACME    200+ un ....... R$ 66,50
+BETA    1+ un ......... R$ 71,20</div>
+    <p>Comprando <strong>pouco</strong>, a BETA é melhor: R$ 71,20 contra R$ 86,40 da ACME.<br />
+    Comprando <strong>200 peças</strong>, a ACME vira a melhor: R$ 66,50.</p>
+    <p>Na lista, a coluna <em>Custo</em> mostra R$ 71,20 (a BETA) e a coluna <em>Volume</em> mostra
+    R$ 66,50 (a ACME). Duas respostas certas para duas perguntas diferentes.</p>
+  </div>
+
+  <h3>Como as faixas entram</h3>
+  <p>Na maioria das vezes, sozinhas: se a planilha da fábrica tem colunas como
+  <code>1 a 99</code>, <code>100–199</code>, <code>200+</code>, <code>Acima de 200</code> ou <code>Preço 100 un</code>,
+  o programa entende cada uma como uma faixa. Também funciona com colunas
+  <code>Qtd mínima</code> / <code>Qtd máxima</code> + <code>Custo</code>, uma linha por faixa.</p>
+  <p>À mão, no painel da peça: escolha o fornecedor, digite o custo e a partir de quantas unidades
+  ele vale. <strong>Lançar preço</strong> e pronto.</p>
+
+  <h3>O histórico de reajuste</h3>
+  <p>Quando você sobe a tabela nova de uma fábrica, o programa compara com o que estava valendo:</p>
+  <table>
+    <thead><tr><th style="width:30%">Situação</th><th>O que ele faz</th></tr></thead>
+    <tbody>
+      <tr><td>Preço igual</td><td>Nada. Não polui o histórico com repetição.</td></tr>
+      <tr><td>Preço diferente</td><td>Fecha a vigência do antigo na data-base nova e grava a variação em %.</td></tr>
+      <tr><td>Tabela antiga, subida depois</td><td>Entra como registro histórico fechado, sem derrubar o preço atual.</td></tr>
+    </tbody>
+  </table>
+  <p>O reajuste é <strong>por faixa</strong>: a fábrica pode subir o preço unitário e manter o de 200 unidades.
+  Por isso “a peça aumentou 9%” só faz sentido dizendo em qual faixa.</p>
+
+  <h3>Definir seu preço de venda</h3>
+  <p>Peça por peça, no painel de edição. Ou de uma vez, no bloco <strong>Catálogo de apresentação</strong>:
+  informe a margem, escolha se a conta parte do custo de 1 unidade ou do melhor custo, e clique em
+  <strong>Aplicar margem</strong>.</p>
+  <div class="conta">preço de venda = custo × (1 + margem)
+112,50 × 1,45 = 163,12  →  R$ 163,90</div>
+  <p>O resultado é arredondado para cima terminando em <code>,90</code>. Por padrão ele
+  <strong>não sobrescreve</strong> preço que você já definiu à mão — marque a caixa se quiser refazer tudo.</p>
+
+  <div class="atencao">
+    <span class="rotulo">Cuidado ao partir do melhor custo</span>
+    <p>Precificar sobre o custo de volume dá um preço mais agressivo, mas só se sustenta se você
+    realmente comprar naquela quantidade. Se comprar pouco, sua margem some.</p>
+  </div>
+</section>
+
+<!-- =============================================================== 09 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 09</span>
+    <h2>Exportar o catálogo</h2>
+    <p class="sumario">Duas versões do mesmo catálogo: uma para o cliente, uma para você.</p>
+  </div>
+
+  <figure>
+    <img src="img/catalogo-cliente.png" alt="Catálogo de apresentação gerado, agrupado por montadora, com foto, código, descrição e preço" />
+    <figcaption><span class="fig">Fig. 09.1</span> A versão do cliente: agrupada por montadora, com foto,
+      código, aplicação, equivalências e preço de venda.</figcaption>
+  </figure>
+
+  <h3>As três saídas</h3>
+  <table>
+    <thead><tr><th style="width:30%">Botão</th><th>O que sai</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Abrir catálogo</strong></td>
+          <td>Abre o catálogo no navegador. Ali, <code>Ctrl+P</code> → <em>Salvar como PDF</em>. O arquivo
+          já sai paginado em A4, sem cortar peça no meio.</td></tr>
+      <tr><td><strong>Baixar HTML</strong></td>
+          <td>O mesmo catálogo como arquivo. As fotos vão embutidas nele, então pode mandar por
+          e-mail e o cliente abre sem precisar de nada instalado.</td></tr>
+      <tr><td><strong>Baixar planilha</strong></td>
+          <td>Uma linha por peça, com filtro pronto — para quem pediu “me manda em Excel”.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>A versão de uso interno</h3>
+  <p>No seletor <strong>Preço</strong>, a opção <em>Uso interno (custo e margem)</em> gera o mesmo catálogo
+  mostrando o custo de cada fornecedor, cada faixa de volume e a sua margem. É a foto do seu poder
+  de compra, e sai com um aviso vermelho no topo para você não confundir os dois documentos.</p>
+
+  <figure class="estreita">
+    <img src="img/catalogo-interno.png" alt="Cartão de peça na versão interna, mostrando custo por fornecedor e margem" />
+    <figcaption><span class="fig">Fig. 09.2</span> Na versão interna, cada peça mostra fornecedor, faixa e margem.</figcaption>
+  </figure>
+
+  <div class="atencao">
+    <span class="rotulo">Nunca mande a versão interna para o cliente</span>
+    <p>A versão do cliente <strong>não mostra</strong> fornecedor nem custo em lugar nenhum — nem na capa.
+    De quais fábricas você compra e por quanto é justamente o que você não quer entregar. Antes de
+    enviar, confira: se aparecer nome de fábrica ou a palavra “margem”, é o documento errado.</p>
+  </div>
+</section>
+
+<!-- =============================================================== 10 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 10</span>
+    <h2>Seus dados e o backup</h2>
+    <p class="sumario">Tudo fica no seu computador. Ninguém mais tem acesso — e ninguém mais faz cópia.</p>
+  </div>
+
+  <p>O programa não usa internet e não manda nada para fora. Seu catálogo, os arquivos que você
+  importou e as fotos ficam numa única pasta:</p>
+  <div class="conta">%APPDATA%\catalogo-pecas-automotivas\dados</div>
+  <p>O caminho completo, na sua máquina, é
+  <code>C:\Users\&lt;seu usuário&gt;\AppData\Roaming\catalogo-pecas-automotivas\dados</code>.
+  Para chegar lá sem digitar: menu <strong>Ajuda → Onde ficam meus dados</strong>.</p>
+
+  <h3>Como fazer backup</h3>
+  <ol class="passos">
+    <li><h4>Feche o programa</h4><p>Para o banco de dados não estar sendo escrito na hora da cópia.</p></li>
+    <li><h4>Abra a pasta de dados</h4><p>Pelo menu <strong>Ajuda → Onde ficam meus dados</strong>.</p></li>
+    <li><h4>Copie a pasta inteira</h4><p>Para um pendrive, HD externo ou nuvem. É isso: a pasta é o backup.</p></li>
+  </ol>
+
+  <div class="nota">
+    <span class="rotulo">Vale marcar no calendário</span>
+    <p>A pasta fica fora do programa de propósito: reinstalar ou atualizar não apaga seus dados.
+    Mas formatar o computador apaga. Uma cópia por mês num pendrive resolve — o arquivo é pequeno.</p>
+  </div>
+
+  <h3>Atualizações</h3>
+  <p>Cada versão nova vem como um instalador que você roda por cima da instalação atual; seus dados
+  continuam onde estão. A versão em uso aparece sempre no <strong>canto inferior direito</strong> da tela,
+  em cinza claro — é ali que você confere se a alteração que pediu já chegou.</p>
+</section>
+
+<!-- =============================================================== 11 -->
+<section class="secao">
+  <div class="secao-cabeca">
+    <span class="ref">Seção 11</span>
+    <h2>Quando algo dá errado</h2>
+    <p class="sumario">Os casos que realmente aparecem, e o que fazer em cada um.</p>
+  </div>
+
+  <div class="faq">
+    <div>
+      <h4>O Windows diz que o programa não é seguro</h4>
+      <p><em>Mais informações → Executar assim mesmo.</em> O aviso aparece porque o executável não tem
+      assinatura digital, que é um certificado pago. Só na primeira vez.</p>
+    </div>
+    <div>
+      <h4>Importei e não veio peça nenhuma</h4>
+      <p>Abra a planilha e veja se o cabeçalho é texto de verdade (dá para selecionar e copiar).
+      Cabeçalho em imagem, células mescladas atravessando colunas e PDF escaneado são as três causas
+      mais comuns. Apagar as linhas decorativas acima do cabeçalho costuma resolver.</p>
+    </div>
+    <div>
+      <h4>Veio a peça, mas sem preço</h4>
+      <p>Preço só entra se o <strong>fornecedor</strong> estiver informado no momento da importação —
+      preço sem fábrica não teria como entrar no comparativo. O resumo da importação avisa quantas
+      linhas foram ignoradas por isso. Suba o arquivo de novo com o fornecedor preenchido.</p>
+    </div>
+    <div>
+      <h4>A foto não foi para a peça certa</h4>
+      <p>Em planilha, a foto vai para a linha onde ela está ancorada. Em Word e PDF isso nem sempre
+      é possível; a imagem fica em <strong>Fotos sem peça</strong>, dentro do painel de qualquer peça, e
+      você vincula com um clique.</p>
+    </div>
+    <div>
+      <h4>A mesma peça apareceu duas vezes</h4>
+      <p>Acontece quando as duas tabelas usam códigos diferentes e nenhum código em comum. Abra uma
+      das duas, adicione em <strong>Códigos equivalentes</strong> o código usado pela outra fábrica, e
+      exclua a duplicada.</p>
+    </div>
+    <div>
+      <h4>Preço de venda saiu como “sob consulta”</h4>
+      <p>É uma peça sem preço de venda definido. O catálogo nunca imprime zero: ou tem preço, ou diz
+      “sob consulta”. Defina no painel da peça, ou use <strong>Aplicar margem</strong> para preencher todas
+      as que têm custo.</p>
+    </div>
+    <div>
+      <h4>Quero desfazer uma importação inteira</h4>
+      <p>Hoje não há botão para isso na tela — a exclusão é peça por peça, no painel de edição.
+      Se você importou um arquivo muito errado, o caminho mais rápido é criar um catálogo novo e
+      importar de novo, com calma.</p>
+    </div>
+    <div>
+      <h4>Abri e não vejo minhas peças</h4>
+      <p>Verifique o seletor de catálogo no alto da tela — provavelmente está em outro catálogo.
+      Confira também se a busca ou os filtros de montadora e fornecedor estão preenchidos: eles
+      continuam valendo até você limpar.</p>
+    </div>
+  </div>
+
+  <p class="fim">Catálogo · Peças Automotivas — Manual de uso, versão 1.2</p>
+</section>
+
+</body>
+</html>
