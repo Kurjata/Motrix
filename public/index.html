@@ -187,6 +187,28 @@
     <div id="resumo-exportacao" class="aviso oculto"></div>
   </aside>
 
+  <!-- painel de novo catálogo -->
+  <aside id="painel-catalogo-novo" class="painel oculto" aria-label="Novo catálogo">
+    <div class="painel-cabecalho">
+      <h2>Novo catálogo</h2>
+      <button class="secundario mini fechar" type="button">Fechar</button>
+    </div>
+    <form id="form-catalogo">
+      <label>Nome
+        <input name="nome" placeholder="ex.: Linha de suspensão 2026" required />
+      </label>
+      <label>Descrição (opcional)
+        <input name="descricao" placeholder="ex.: peças de suspensão para oficina" />
+      </label>
+      <div class="acoes"><button type="submit">Criar catálogo</button></div>
+      <p class="dica">
+        O catálogo é o agrupamento de trabalho: cada um tem as suas peças, os seus arquivos e
+        os seus fornecedores. Dá para ter um por cliente, por linha de produto, ou um só para tudo.
+      </p>
+    </form>
+    <div id="resultado-catalogo" class="aviso oculto"></div>
+  </aside>
+
   <!-- painel de fábricas -->
   <aside id="painel-fabricas" class="painel oculto" aria-label="Fábricas">
     <div class="painel-cabecalho">

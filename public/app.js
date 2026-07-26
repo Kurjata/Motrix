@@ -192,7 +192,14 @@ const VAZIO = {
 
 async function carregarItens() {
   const corpo = $('#tabela-itens tbody');
-  if (!estado.catalogoId) return (corpo.innerHTML = '');
+
+  // sem catálogo não há o que listar: a tela vazia tem que dizer o que fazer
+  if (!estado.catalogoId) {
+    corpo.innerHTML = `<tr><td colspan="7" class="suave">
+      Nenhum catálogo ainda. Clique em <strong>Novo</strong>, no alto da tela, para criar o primeiro.
+    </td></tr>`;
+    return;
+  }
 
   const parametros = new URLSearchParams({ pagina: estado.pagina, limite: estado.limite });
   if (estado.busca) parametros.set('busca', estado.busca);
@@ -492,6 +499,7 @@ const PAINEIS = {
   importar: '#painel-importar',
   catalogo: '#painel-catalogo',
   fabricas: '#painel-fabricas',
+  'catalogo-novo': '#painel-catalogo-novo',
 };
 
 function fecharPainel() {
@@ -558,12 +566,28 @@ $('#catalogo').addEventListener('change', (evento) => {
   carregarResumo();
 });
 
-$('#novo-catalogo').addEventListener('click', async () => {
-  const nome = prompt('Nome do catálogo:');
-  if (!nome?.trim()) return;
-  const catalogo = await apiJson('/api/catalogos', 'POST', { nome: nome.trim() });
-  estado.catalogoId = catalogo.id;
-  await atualizarTudo();
+// prompt() não existe no Electron: no programa instalado o clique não fazia nada.
+// O cadastro vive num painel, como os outros.
+$('#novo-catalogo').addEventListener('click', () => abrirPainelLateral('catalogo-novo'));
+
+$('#form-catalogo').addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  const aviso = $('#resultado-catalogo');
+  const dados = dadosDoFormulario(evento.target);
+
+  try {
+    const catalogo = await apiJson('/api/catalogos', 'POST', dados);
+    estado.catalogoId = catalogo.id;
+    estado.recorte = '';
+    evento.target.reset();
+    aviso.classList.add('oculto');
+    fecharPainel();
+    await atualizarTudo();
+  } catch (erro) {
+    aviso.textContent = erro.message;
+    aviso.classList.add('erro');
+    aviso.classList.remove('oculto');
+  }
 });
 
 $('#form-upload').addEventListener('submit', async (evento) => {
