@@ -1,16 +1,16 @@
 services:
-  motrix:
+  catalogo:
     build: .
-    image: motrix:latest
-    container_name: motrix
+    image: catalogo-pecas:latest
+    container_name: catalogo-pecas
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
     volumes:
       # banco, uploads e imagens extraidas sobrevivem ao recriar o container
-      - motrix-dados:/app/data
+      - catalogo-dados:/app/data
     environment:
       MAX_UPLOAD_BYTES: "209715200"
 
 volumes:
-  motrix-dados:
+  catalogo-dados:

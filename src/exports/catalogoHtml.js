@@ -7,7 +7,7 @@ const { descreverAplicacao } = require('../services/exportService');
 
 /**
  * Catalogo de apresentacao em HTML autocontido: as fotos viram data URI, entao o arquivo
- * pode ser enviado por e-mail ou aberto sem o Motrix no ar. O CSS de impressao ja prepara
+ * pode ser enviado por e-mail ou aberto sem o sistema no ar. O CSS de impressao ja prepara
  * o PDF (Ctrl+P > Salvar como PDF), sem precisar de gerador de PDF no servidor.
  */
 
@@ -144,7 +144,7 @@ function gerarCatalogoHtml(dados) {
 <body>
   <div class="folha">
     <header class="capa">
-      <div class="marca">Motrix</div>
+      <div class="marca">Peças Automotivas</div>
       <h1>${escapar(opcoes.titulo)}</h1>
       ${opcoes.subtitulo ? `<div class="sub">${escapar(opcoes.subtitulo)}</div>` : ''}
       <div class="resumo">
@@ -162,7 +162,7 @@ function gerarCatalogoHtml(dados) {
 
     <footer class="rodape">
       <span>${escapar(catalogo.nome)}</span>
-      <span>Gerado pelo Motrix em ${gerado}</span>
+      <span>Emitido em ${gerado}</span>
     </footer>
   </div>
 </body>

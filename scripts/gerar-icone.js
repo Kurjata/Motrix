@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Desenha o icone do Motrix e grava desktop/icone.ico (+ um PNG de 512 para outros usos).
+ * Desenha o icone do aplicativo e grava desktop/icone.ico (+ um PNG de 512 para outros usos).
  * Feito na unha com o codificador PNG do proprio projeto: nada de canvas ou binario nativo,
  * que quebrariam o empacotamento.
  *   node scripts/gerar-icone.js
@@ -17,27 +17,37 @@ const SUPERAMOSTRAGEM = 4; // 4x4 amostras por pixel: e o que da a borda suave
 const FUNDO = [18, 22, 28];      // mesmo #12161c do tema escuro do app
 const MARCA = [77, 141, 253];    // mesmo acento azul
 
-/** O "M" em coordenadas de 0 a 1, como uma lista de poligonos preenchidos. */
-const HASTE = 0.115;
-const M = [
-  // haste esquerda
-  [[0.20, 0.24], [0.20, 0.78], [0.20 + HASTE, 0.78], [0.20 + HASTE, 0.24]],
-  // haste direita
-  [[0.80 - HASTE, 0.24], [0.80 - HASTE, 0.78], [0.80, 0.78], [0.80, 0.24]],
-  // o V do meio como um poligono unico: duas diagonais separadas deixam
-  // um entalhe no vertice, onde uma nao cobre o que falta na outra
-  [[0.20, 0.24], [0.315, 0.24], [0.50, 0.565], [0.685, 0.24], [0.80, 0.24],
-    [0.555, 0.695], [0.445, 0.695]],
-];
+// Engrenagem: numeros escolhidos para o desenho continuar legivel em 16 px,
+// onde cada dente tem pouco mais de um pixel.
+const DENTES = 8;
+const RAIO_DENTE = 0.400;   // ponta do dente
+const RAIO_BASE = 0.310;    // vale entre os dentes
+const RAIO_FURO = 0.145;    // furo central, que mostra o fundo
+const LARGURA_DENTE = 0.46; // fracao do passo ocupada pelo dente
+const SUAVIZACAO = 0.10;    // transicao angular: sem isso o dente vira um degrau duro
 
-function dentroDoPoligono(x, y, poligono) {
-  let dentro = false;
-  for (let i = 0, j = poligono.length - 1; i < poligono.length; j = i++) {
-    const [xi, yi] = poligono[i];
-    const [xj, yj] = poligono[j];
-    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) dentro = !dentro;
-  }
-  return dentro;
+function suavizar(borda0, borda1, valor) {
+  const t = Math.min(Math.max((valor - borda0) / (borda1 - borda0), 0), 1);
+  return t * t * (3 - 2 * t);
+}
+
+/** Raio da engrenagem no angulo dado: alterna ponta e vale a cada dente. */
+function raioNoAngulo(angulo) {
+  const passo = (Math.PI * 2) / DENTES;
+  const fase = ((angulo % passo) + passo) % passo / passo; // 0..1 dentro do dente
+  const distanciaDoCentroDoDente = Math.abs(fase - 0.5);
+  const meia = LARGURA_DENTE / 2;
+
+  const dentro = suavizar(meia + SUAVIZACAO / 2, meia - SUAVIZACAO / 2, distanciaDoCentroDoDente);
+  return RAIO_BASE + (RAIO_DENTE - RAIO_BASE) * dentro;
+}
+
+function naEngrenagem(x, y) {
+  const dx = x - 0.5;
+  const dy = y - 0.5;
+  const raio = Math.hypot(dx, dy);
+  if (raio < RAIO_FURO) return false;
+  return raio <= raioNoAngulo(Math.atan2(dy, dx));
 }
 
 /** Canto arredondado do quadrado de fundo, no mesmo raio proporcional do app. */
@@ -61,7 +71,7 @@ function desenhar(lado) {
           const y = (py + (sy + 0.5) / SUPERAMOSTRAGEM) / lado;
           if (!dentroDoQuadrado(x, y)) continue;
           cobertura++;
-          if (M.some((poligono) => dentroDoPoligono(x, y, poligono))) cobreMarca++;
+          if (naEngrenagem(x, y)) cobreMarca++;
         }
       }
 

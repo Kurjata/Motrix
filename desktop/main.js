@@ -4,10 +4,16 @@ const path = require('path');
 const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
 
 /**
- * Processo principal do Motrix desktop.
+ * Processo principal do aplicativo de desktop.
  * O mesmo servidor Express do modo servidor roda aqui dentro, numa porta livre
  * escolhida pelo sistema; a janela e so um navegador apontado para ele.
  */
+
+const NOME = 'Catálogo - Peças Automotivas';
+
+// O nome de exibicao tem acento e espaco; a pasta de dados nao pode ter, para nao
+// depender de codificacao do sistema de arquivos. Precisa vir antes de getPath.
+app.setName('catalogo-pecas-automotivas');
 
 // Os dados do usuario NAO podem ficar junto do programa: em C:\Program Files nao ha
 // permissao de escrita e o app.asar e somente leitura. Vao para a pasta do usuario.
@@ -69,11 +75,11 @@ function montarMenu() {
           click: () => shell.openPath(process.env.DATA_DIR),
         },
         {
-          label: 'Sobre o Motrix',
+          label: `Sobre o ${NOME}`,
           click: () => dialog.showMessageBox(janela, {
             type: 'info',
-            title: 'Sobre o Motrix',
-            message: `Motrix ${app.getVersion()}`,
+            title: `Sobre o ${NOME}`,
+            message: `${NOME} ${app.getVersion()}`,
             detail: 'Controle de peças catalogadas.\n\n'
               + `Banco e arquivos importados: ${process.env.DATA_DIR}`,
             buttons: ['Fechar'],
@@ -90,7 +96,7 @@ function criarJanela(url) {
     height: 860,
     minWidth: 900,
     minHeight: 600,
-    title: 'Motrix',
+    title: NOME,
     icon: ICONE,
     backgroundColor: '#12161c', // evita o flash branco antes da pagina pintar
     show: false,
@@ -108,7 +114,7 @@ function criarJanela(url) {
   });
 
   janela.loadURL(url);
-  if (process.env.MOTRIX_AUTOTESTE === '1') autoteste(url);
+  if (process.env.CATALOGO_AUTOTESTE === '1') autoteste(url);
 }
 
 /**
@@ -123,8 +129,8 @@ function autoteste(url) {
       const telaMontada = await janela.webContents
         .executeJavaScript('!!document.querySelector("#tabela-itens") && !!document.querySelector("#tema")');
       const catalogos = await fetch(`${url}/api/catalogos`).then((r) => r.json());
-      const importacao = process.env.MOTRIX_TESTE_ARQUIVO
-        ? await importarDeTeste(url, process.env.MOTRIX_TESTE_ARQUIVO)
+      const importacao = process.env.CATALOGO_TESTE_ARQUIVO
+        ? await importarDeTeste(url, process.env.CATALOGO_TESTE_ARQUIVO)
         : null;
 
       console.log(JSON.stringify({
@@ -134,7 +140,7 @@ function autoteste(url) {
       }));
 
       const importacaoOk = !importacao || importacao.status === 'processado';
-      app.exit(saude.ok && telaMontada && titulo === 'Motrix' && importacaoOk ? 0 : 1);
+      app.exit(saude.ok && telaMontada && titulo === NOME && importacaoOk ? 0 : 1);
     } catch (erro) {
       console.error('autoteste falhou:', erro);
       app.exit(1);
@@ -171,7 +177,7 @@ app.whenReady().then(async () => {
     montarMenu();
     criarJanela(inicio.url);
   } catch (erro) {
-    dialog.showErrorBox('Motrix não conseguiu iniciar', String(erro?.stack || erro));
+    dialog.showErrorBox(`${NOME} não conseguiu iniciar`, String(erro?.stack || erro));
     app.quit();
   }
 });

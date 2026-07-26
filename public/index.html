@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Motrix</title>
+  <title>Catálogo - Peças Automotivas</title>
   <link rel="stylesheet" href="style.css" />
   <script>
     // aplica o tema antes de pintar a tela: sem isso o modo escuro pisca branco ao carregar
     try {
-      var tema = localStorage.getItem('motrix:tema');
+      var tema = localStorage.getItem('catalogo:tema');
       if (tema) document.documentElement.dataset.tema = tema;
     } catch (e) { /* navegacao privada sem localStorage: segue no tema do sistema */ }
   </script>
@@ -16,8 +16,8 @@
 <body>
   <header>
     <div class="marca">
-      <strong>Motrix</strong>
-      <span class="suave">controle de peças catalogadas</span>
+      <strong>Catálogo</strong>
+      <span class="suave">Peças Automotivas</span>
     </div>
     <div class="catalogo-barra">
       <select id="catalogo"></select>
@@ -46,7 +46,7 @@
         </div>
         <p class="dica">
           Serve tanto para o catálogo de peças quanto para a tabela de preços da fábrica —
-          o Motrix reconhece as colunas sozinho e casa as peças pelo código.
+          o sistema reconhece as colunas sozinho e casa as peças pelo código.
           Faixas por volume (“100 a 199”, “acima de 200”) viram preço por quantidade.
         </p>
       </form>

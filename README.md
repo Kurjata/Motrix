@@ -1,4 +1,4 @@
-# Motrix
+# Catálogo - Peças Automotivas
 
 Controle de peças catalogadas. Recebe os arquivos que as fábricas mandam (planilha, Word, PDF,
 PSD), lê códigos e peças, consolida tudo em um catálogo único e deixa você editar cada item
@@ -21,14 +21,14 @@ Saem dois arquivos em `dist/`:
 
 | Arquivo | O que faz |
 |---|---|
-| `Motrix-0.2.0-instalador.exe` | instala, cria o atalho na Área de Trabalho e no menu Iniciar |
-| `Motrix-0.2.0-portatil.exe` | roda direto, sem instalar — serve para pendrive |
+| `Catalogo-Pecas-Automotivas-0.3.0-instalador.exe` | instala, cria o atalho na Área de Trabalho e no menu Iniciar |
+| `Catalogo-Pecas-Automotivas-0.3.0-portatil.exe` | roda direto, sem instalar — serve para pendrive |
 
 A máquina que vai usar **não precisa de Node, Docker nem VS Code**: o Electron leva tudo dentro.
 É o mesmo servidor Express rodando dentro do programa, numa porta livre escolhida na hora,
 acessível só em `127.0.0.1` (não abre nada para a rede).
 
-Seus dados ficam em `%APPDATA%\motrix\dados` — fora da pasta do programa, para sobreviverem a
+Seus dados ficam em `%APPDATA%\catalogo-pecas-automotivas\dados` — fora da pasta do programa, para sobreviverem a
 uma reinstalação. O menu **Ajuda → Onde ficam meus dados** abre essa pasta; faça o backup dela.
 
 O botão *Abrir catálogo* manda o catálogo exportado para o seu navegador padrão, que é onde
@@ -51,8 +51,9 @@ npm run preparar:node      # binário para o Node — necessário antes de `npm 
 Na prática: depois de gerar o instalador, rode `npm run preparar:node` se for voltar a usar
 `npm start` ou os testes. O Docker não é afetado — ele compila dentro da imagem.
 
-O ícone é desenhado por código (`npm run icone`), sem editor de imagem: um "M" azul sobre
-quadrado escuro, gerado em 16 a 256 px e empacotado como `.ico`.
+O ícone é desenhado por código (`npm run icone`), sem editor de imagem: uma engrenagem azul
+sobre quadrado escuro, rasterizada em coordenadas polares e empacotada como `.ico` de 16 a
+256 px.
 
 ### Docker (para servidor)
 
@@ -61,7 +62,7 @@ docker compose up -d
 ```
 
 Sobe em `http://localhost:3000`. O banco, os uploads e as imagens ficam no volume
-`motrix-dados`, então recriar o container não perde nada.
+`catalogo-dados`, então recriar o container não perde nada.
 Para mudar a porta: `PORT=8080 docker compose up -d`.
 
 ### Local
@@ -79,7 +80,7 @@ node scripts/gerar-exemplos.js && node scripts/gerar-pdf-psd.js && node scripts/
 
 ## Como funciona
 
-Você importa um arquivo dizendo **de qual fábrica** ele é e a **data-base**. O Motrix acha o
+Você importa um arquivo dizendo **de qual fábrica** ele é e a **data-base**. O sistema acha o
 cabeçalho da tabela, reconhece as colunas por sinônimo e casa cada linha com uma peça que já
 exista no catálogo (pelo código principal ou por qualquer código equivalente). Coluna que ele
 não reconhece é preservada em `itens.dados_extra` — nada é descartado.
@@ -126,7 +127,7 @@ Cabeçalhos reconhecidos como faixa: `1 a 99`, `100-199`, `200+`, `Acima de 200`
 
 ### Tema claro e escuro
 
-O botão no cabeçalho alterna entre os dois. Enquanto você não escolher, o Motrix segue o tema do
+O botão no cabeçalho alterna entre os dois. Enquanto você não escolher, o programa segue o tema do
 sistema operacional; depois da primeira escolha, ela é gravada no navegador e passa a mandar.
 Um script inline no `<head>` aplica o tema antes da primeira pintura, para a tela não piscar
 branca ao abrir no escuro.
@@ -145,7 +146,7 @@ na lista (montadora e fornecedor valem para a exportação também). Três saíd
 | **Uso interno** | mesma peça mostrando custo por fornecedor, faixas de volume e margem |
 
 O HTML embute as fotos como data URI, então o arquivo pode ser enviado por e-mail e aberto sem
-o Motrix no ar. Não há gerador de PDF no servidor de propósito: o navegador já imprime em A4
+o programa no ar. Não há gerador de PDF no servidor de propósito: o navegador já imprime em A4
 com quebra de página correta, e isso evita mais uma dependência nativa no Docker.
 
 **A versão do cliente não mostra fornecedor nem custo** — de quem você compra é justamente o

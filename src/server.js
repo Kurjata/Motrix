@@ -57,7 +57,7 @@ function iniciar(porta = PORT) {
 
 // executado direto pelo Node (npm start); dentro do Electron quem chama e o desktop/main.js
 if (require.main === module) {
-  iniciar().then(({ url }) => console.log(`Motrix rodando em ${url}`));
+  iniciar().then(({ url }) => console.log(`Catálogo - Peças Automotivas rodando em ${url}`));
 }
 
 module.exports = { app, iniciar };

@@ -1,8 +1,8 @@
 {
-  "name": "motrix",
-  "version": "0.2.0",
+  "name": "catalogo-pecas-automotivas",
+  "version": "0.3.0",
   "private": true,
-  "description": "Motrix - controle de pecas catalogadas: importa catalogos e tabelas de preco, consolida o DE-PARA e exporta o catalogo de apresentacao",
+  "description": "Catalogo - Pecas Automotivas: importa catalogos e tabelas de preco das fabricas, consolida o DE-PARA e exporta o catalogo de apresentacao",
   "type": "commonjs",
   "main": "desktop/main.js",
   "author": "Felipe Kurjata",
@@ -19,8 +19,8 @@
     "preparar:node": "npm rebuild better-sqlite3"
   },
   "build": {
-    "appId": "com.kurjata.motrix",
-    "productName": "Motrix",
+    "appId": "com.kurjata.catalogopecasautomotivas",
+    "productName": "Catálogo - Peças Automotivas",
     "copyright": "Felipe Kurjata",
     "directories": {
       "output": "dist",
@@ -46,16 +46,16 @@
       "icon": "desktop/icone.ico"
     },
     "portable": {
-      "artifactName": "${productName}-${version}-portatil.${ext}"
+      "artifactName": "Catalogo-Pecas-Automotivas-${version}-portatil.${ext}"
     },
     "nsis": {
-      "artifactName": "${productName}-${version}-instalador.${ext}",
+      "artifactName": "Catalogo-Pecas-Automotivas-${version}-instalador.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Motrix",
+      "shortcutName": "Catálogo - Peças Automotivas",
       "installerLanguages": [
         "pt_BR"
       ]

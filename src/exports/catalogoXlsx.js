@@ -10,7 +10,7 @@ const { descreverAplicacao } = require('../services/exportService');
 async function gerarCatalogoXlsx(dados) {
   const { catalogo, opcoes, grupos, resumo } = dados;
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Motrix';
+  workbook.creator = 'Catálogo - Peças Automotivas';
   workbook.created = new Date();
 
   const ws = workbook.addWorksheet('Catalogo', {

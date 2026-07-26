@@ -19,7 +19,7 @@ const escapar = (texto) =>
 
 // ------------------------------------------------------------------ tema
 
-const TEMA_CHAVE = 'motrix:tema';
+const TEMA_CHAVE = 'catalogo:tema';
 const preferenciaEscura = window.matchMedia('(prefers-color-scheme: dark)');
 
 const lerTemaSalvo = () => {
