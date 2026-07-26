@@ -164,6 +164,81 @@ router.get('/:itemId', (req, res) => {
   });
 });
 
+// ---------------------------------------------------------------- criacao
+
+/**
+ * Registra o codigo principal tambem no DE-PARA, como faz o import: e por essa
+ * tabela que a busca por codigo com separadores encontra a peca.
+ */
+function registrarCodigoPrincipal(itemId, codigo, marca) {
+  const norm = normalizarCodigo(codigo);
+  if (!norm) return;
+  db.prepare(`INSERT OR IGNORE INTO item_codigos (item_id, tipo, codigo, codigo_norm, fabricante)
+              VALUES (?, 'para', ?, ?, ?)`).run(itemId, String(codigo).trim(), norm, marca ?? null);
+}
+
+const criar = db.transaction((catalogoId, dados, aplicacao) => {
+  const { lastInsertRowid: itemId } = db.prepare(`
+    INSERT INTO itens (catalogo_id, codigo, codigo_norm, descricao, marca, unidade, ncm,
+                       quantidade, preco_venda, observacao, origem)
+    VALUES (@catalogo_id, @codigo, @codigo_norm, @descricao, @marca, @unidade, @ncm,
+            @quantidade, @preco_venda, @observacao, 'manual')`).run({
+    catalogo_id: Number(catalogoId),
+    codigo: dados.codigo ?? null,
+    codigo_norm: normalizarCodigo(dados.codigo),
+    descricao: dados.descricao ?? null,
+    marca: dados.marca ?? null,
+    unidade: dados.unidade ?? null,
+    ncm: dados.ncm ?? null,
+    quantidade: dados.quantidade ?? null,
+    preco_venda: dados.preco_venda ?? null,
+    observacao: dados.observacao ?? null,
+  });
+
+  registrarCodigoPrincipal(itemId, dados.codigo, dados.marca);
+
+  if (aplicacao) {
+    db.prepare(`INSERT OR IGNORE INTO item_aplicacoes
+                  (item_id, montadora, modelo, motor, versao, ano_inicio, ano_fim, texto_livre, chave)
+                VALUES (@item_id, @montadora, @modelo, @motor, @versao, @ano_inicio, @ano_fim,
+                        @texto_livre, @chave)`).run({ ...aplicacao, item_id: itemId });
+  }
+
+  return itemId;
+});
+
+router.post('/', (req, res) => {
+  const dados = {};
+  for (const [campo, tipo] of Object.entries(CAMPOS_EDITAVEIS)) {
+    if (campo in req.body) dados[campo] = converter(req.body[campo], tipo);
+  }
+
+  if (!dados.codigo && !dados.descricao) {
+    return res.status(400).json({ erro: 'Informe ao menos o código ou a descrição da peça.' });
+  }
+
+  // o codigo e unico dentro do catalogo: avisar antes e melhor do que estourar a constraint
+  const norm = normalizarCodigo(dados.codigo);
+  if (norm) {
+    const existente = db.prepare('SELECT id, descricao FROM itens WHERE catalogo_id = ? AND codigo_norm = ?')
+      .get(req.params.catalogoId, norm);
+    if (existente) {
+      return res.status(409).json({
+        erro: `Já existe uma peça com o código ${dados.codigo} neste catálogo.`,
+        item_id: existente.id,
+      });
+    }
+  }
+
+  const aplicacao = req.body.aplicacao && Object.values(req.body.aplicacao).some(Boolean)
+    ? normalizarAplicacao(req.body.aplicacao)
+    : null;
+
+  const itemId = criar(req.params.catalogoId, dados, aplicacao?.chave.replace(/\|/g, '') ? aplicacao : null);
+  const item = db.prepare('SELECT * FROM vw_itens_custo WHERE id = ?').get(itemId);
+  res.status(201).json(montarItens([item])[0]);
+});
+
 // ---------------------------------------------------------------- edicao
 
 router.patch('/:itemId', exigirItem, (req, res) => {
@@ -178,6 +253,9 @@ router.patch('/:itemId', exigirItem, (req, res) => {
   const sets = Object.keys(alteracoes).map((c) => `${c} = @${c}`).join(', ');
   db.prepare(`UPDATE itens SET ${sets}, atualizado_em = datetime('now') WHERE id = @id`)
     .run({ ...alteracoes, id: Number(req.params.itemId) });
+
+  // trocar o codigo principal sem levar o DE-PARA junto deixaria a peca fora da busca por codigo
+  if (alteracoes.codigo) registrarCodigoPrincipal(req.params.itemId, alteracoes.codigo, alteracoes.marca);
 
   const item = db.prepare('SELECT * FROM vw_itens_custo WHERE id = ?').get(req.params.itemId);
   res.json(montarItens([item])[0]);

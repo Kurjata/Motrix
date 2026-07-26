@@ -208,6 +208,59 @@ async function main() {
   checar('remover a principal promove a foto que sobrou',
     restante.length === 1 && restante[0].principal === 1, restante);
 
+  // ---------------------------------------------------------------- peça cadastrada a mao
+  const nova = await apiJson(rotaItens, 'POST', {
+    codigo: 'MN-0001',
+    descricao: 'Bieleta traseira',
+    marca: 'Generica',
+    quantidade: 4,
+    aplicacao: { montadora: 'Fiat', modelo: 'Argo', motor: '1.3', versao: 'Drive', ano_inicio: 2019, ano_fim: 2024 },
+  });
+  checar('cria peça do zero, com aplicação junto',
+    nova.codigo === 'MN-0001' && nova.aplicacoes.length === 1
+      && nova.aplicacoes[0].montadora === 'FIAT' && nova.aplicacoes[0].versao === 'DRIVE',
+    { codigo: nova.codigo, aplicacoes: nova.aplicacoes });
+  checar('peça manual entra na busca por código com separadores',
+    (await api(`${rotaItens}?busca=mn.00-01`)).total === 1);
+
+  const repetida = await fetch(`${BASE}${rotaItens}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ codigo: 'MN-0001', descricao: 'Outra' }),
+  });
+  const corpoRepetida = await repetida.json();
+  checar('código repetido responde 409 apontando a peça existente',
+    repetida.status === 409 && corpoRepetida.item_id === nova.id, corpoRepetida);
+
+  checar('peça sem código e sem descrição é recusada',
+    (await fetch(`${BASE}${rotaItens}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ marca: 'X' }),
+    })).status === 400);
+
+  // as mesmas funcionalidades da peça importada valem para a criada a mão
+  await apiJson(`${rotaItens}/${nova.id}/codigos`, 'POST', { codigo: '51-888-123', tipo: 'de' });
+  await apiJson(`${rotaItens}/${nova.id}/custos`, 'POST', { fornecedor_id: idBeta, custo: 44.5, qtd_min: 1 });
+  await apiJson(`${rotaItens}/${nova.id}/custos`, 'POST', { fornecedor_id: idBeta, custo: 39.9, qtd_min: 100 });
+  await apiJson(`${rotaItens}/${nova.id}/aplicacoes`, 'POST', { montadora: 'Fiat', modelo: 'Cronos', ano_inicio: 2018 });
+  await enviarFoto('manual.png', PNG_B, nova.id);
+  const completa = await api(`${rotaItens}/${nova.id}`);
+
+  checar('peça manual aceita código OEM, 2 aplicações, 2 faixas de preço e foto',
+    completa.codigos.filter((c) => c.tipo === 'de').length === 1
+      && completa.aplicacoes.length === 2 && completa.custos.length === 2
+      && completa.imagens.length === 1 && completa.imagens[0].principal === 1,
+    { codigos: completa.codigos.length, aplicacoes: completa.aplicacoes.length,
+      custos: completa.custos.length, imagens: completa.imagens.length });
+  checar('peça manual entra no melhor custo por volume',
+    completa.custo_base === 44.5 && completa.melhor_custo === 39.9,
+    { base: completa.custo_base, melhor: completa.melhor_custo });
+  checar('peça manual sai no catálogo exportado',
+    (await (await fetch(`${BASE}/api/catalogos/${catalogo.id}/exportar/html`)).text()).includes('MN-0001'));
+
+  await api(`${rotaItens}/${nova.id}`, { method: 'DELETE' });
+  checar('excluir peça manual remove também códigos, aplicações e preços',
+    (await api(`${rotaItens}?busca=MN-0001`)).total === 0
+      && (await api(`${rotaItens}?busca=51888123`)).total === 0);
+
   // ---------------------------------------------------------------- historico
   const detalhe = await api(`${rotaItens}/${pastilha.id}`);
   const baseAcme = detalhe.historico_custo.filter((h) => /ACME/i.test(h.fornecedor) && h.qtd_min === 1);

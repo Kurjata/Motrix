@@ -21,8 +21,8 @@ Saem dois arquivos em `dist/`:
 
 | Arquivo | O que faz |
 |---|---|
-| `Catalogo-Pecas-Automotivas-0.3.0-instalador.exe` | instala, cria o atalho na Área de Trabalho e no menu Iniciar |
-| `Catalogo-Pecas-Automotivas-0.3.0-portatil.exe` | roda direto, sem instalar — serve para pendrive |
+| `Catalogo-Pecas-Automotivas-<versão>-instalador.exe` | instala, cria o atalho na Área de Trabalho e no menu Iniciar |
+| `Catalogo-Pecas-Automotivas-<versão>-portatil.exe` | roda direto, sem instalar — serve para pendrive |
 
 A máquina que vai usar **não precisa de Node, Docker nem VS Code**: o Electron leva tudo dentro.
 É o mesmo servidor Express rodando dentro do programa, numa porta livre escolhida na hora,
@@ -87,6 +87,12 @@ não reconhece é preservada em `itens.dados_extra` — nada é descartado.
 
 O mesmo upload serve para o catálogo de peças e para a tabela de preços: não há campo para
 declarar o tipo, porque as colunas do arquivo já dizem o que ele é.
+
+Nem toda peça chega por arquivo. O botão **+ Nova peça** cadastra uma do zero — código,
+descrição e, se quiser, a aplicação já no mesmo formulário. A peça criada assim é igual às
+importadas: aceita foto, código equivalente, preço por faixa de volume e entra no catálogo
+exportado. Código repetido não é aceito em silêncio: o sistema avisa e oferece abrir a peça
+que já existe.
 
 ### Peça
 
@@ -205,6 +211,7 @@ GET    /api/catalogos                                   POST /api/catalogos
 GET    /api/catalogos/:id/arquivos                      POST /api/catalogos/:id/arquivos  (multipart)
 POST   /api/catalogos/:id/arquivos/:arquivoId/reprocessar
 GET    /api/catalogos/:id/itens?busca=&montadora=&fornecedor_id=&pagina=&limite=
+POST   /api/catalogos/:id/itens                        (cadastro manual; 409 se o código repetir)
 GET    /api/catalogos/:id/itens/-/montadoras
 GET    /api/catalogos/:id/itens/:itemId                 (inclui histórico de custo)
 PATCH  /api/catalogos/:id/itens/:itemId                 DELETE .../itens/:itemId

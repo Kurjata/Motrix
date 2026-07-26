@@ -1,6 +1,6 @@
 {
   "name": "catalogo-pecas-automotivas",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Catalogo - Pecas Automotivas: importa catalogos e tabelas de preco das fabricas, consolida o DE-PARA e exporta o catalogo de apresentacao",
   "type": "commonjs",

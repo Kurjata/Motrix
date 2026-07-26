@@ -56,7 +56,12 @@ preferenciaEscura.addEventListener('change', () => { if (!lerTemaSalvo()) pintar
 async function api(rota, opcoes) {
   const resposta = await fetch(rota, opcoes);
   const corpo = resposta.status === 204 ? null : await resposta.json();
-  if (!resposta.ok) throw new Error(corpo?.erro || `Falha na requisição (${resposta.status})`);
+  if (!resposta.ok) {
+    const erro = new Error(corpo?.erro || `Falha na requisição (${resposta.status})`);
+    erro.status = resposta.status;
+    erro.dados = corpo; // ex.: o id da peça que já existe com aquele código
+    throw erro;
+  }
   return corpo;
 }
 
@@ -315,6 +320,76 @@ function desenharPainel(item, soltas) {
   $('#cortina').classList.remove('oculto');
 }
 
+/**
+ * Cadastro de peça avulsa. Fotos, códigos equivalentes e preços dependem de um id,
+ * então o formulário cria a peça e o painel já reabre em modo de edição, com tudo.
+ */
+function desenharPainelNovo() {
+  estado.item = null;
+  $('#painel-titulo').textContent = 'Nova peça';
+
+  $('#painel-corpo').innerHTML = `
+    <form id="form-nova-peca" class="grade">
+      <label>Código<input name="codigo" placeholder="ex.: BU-5500" autofocus /></label>
+      <label>Marca da peça<input name="marca" placeholder="ex.: ACME" /></label>
+      <label class="largo">Descrição
+        <input name="descricao" placeholder="ex.: Bucha traseira" />
+      </label>
+      <label>Quantidade<input name="quantidade" type="number" step="0.01" /></label>
+      <label>Unidade<input name="unidade" placeholder="ex.: PC" /></label>
+      <label class="largo">Observação<input name="observacao" /></label>
+
+      <div class="bloco largo">
+        <h3>Aplicação (opcional)</h3>
+        <div class="grade">
+          <input name="montadora" placeholder="Montadora (ex.: Volkswagen)" />
+          <input name="modelo" placeholder="Modelo (ex.: Fox)" />
+          <input name="motor" placeholder="Motor (ex.: 1.6)" />
+          <input name="versao" placeholder="Versão (ex.: Comfortline)" />
+          <input name="ano_inicio" type="number" placeholder="Ano inicial" />
+          <input name="ano_fim" type="number" placeholder="Ano final" />
+        </div>
+      </div>
+
+      <div class="acoes largo">
+        <button type="submit">Criar peça</button>
+        <button type="button" id="cancelar-nova" class="secundario">Cancelar</button>
+      </div>
+    </form>
+    <p class="dica">Informe ao menos o código ou a descrição. Depois de criar, o painel abre
+      para você adicionar fotos, códigos equivalentes e preços por fornecedor.</p>`;
+
+  $('#painel').classList.remove('oculto');
+  $('#cortina').classList.remove('oculto');
+  $('#painel-corpo').querySelector('input[name="codigo"]')?.focus();
+}
+
+async function criarPeca(formulario) {
+  const dados = dadosDoFormulario(formulario);
+  const camposAplicacao = ['montadora', 'modelo', 'motor', 'versao', 'ano_inicio', 'ano_fim'];
+
+  const corpo = { aplicacao: {} };
+  for (const [chave, valor] of Object.entries(dados)) {
+    if (!String(valor).trim()) continue;
+    if (camposAplicacao.includes(chave)) corpo.aplicacao[chave] = valor;
+    else corpo[chave] = valor;
+  }
+
+  try {
+    const nova = await apiJson(`/api/catalogos/${estado.catalogoId}/itens`, 'POST', corpo);
+    await carregarItens();
+    await carregarMontadoras();
+    await abrirItem(nova.id);
+  } catch (erro) {
+    // código repetido: em vez de barrar, leva o usuário para a peça que já existe
+    if (erro.status === 409 && erro.dados?.item_id
+        && confirm(`${erro.message}\n\nAbrir a peça existente?`)) {
+      return abrirItem(erro.dados.item_id);
+    }
+    alert(erro.message);
+  }
+}
+
 async function abrirItem(itemId) {
   const [item, soltas] = await Promise.all([
     api(`/api/catalogos/${estado.catalogoId}/itens/${itemId}`),
@@ -395,12 +470,21 @@ $('#tabela-itens').addEventListener('click', (evento) => {
   if (alvo) abrirItem(alvo.dataset.item).catch((erro) => mostrarAviso(erro.message, true));
 });
 
+$('#nova-peca').addEventListener('click', () => {
+  if (!estado.catalogoId) return mostrarAviso('Crie um catálogo antes de cadastrar peças.', true);
+  desenharPainelNovo();
+});
+
 $('#fechar-painel').addEventListener('click', fecharPainel);
 $('#cortina').addEventListener('click', fecharPainel);
 document.addEventListener('keydown', (evento) => { if (evento.key === 'Escape') fecharPainel(); });
 
 $('#painel-corpo').addEventListener('submit', async (evento) => {
   evento.preventDefault();
+
+  // o cadastro de peça nova é o único formulário do painel que roda sem item aberto
+  if (evento.target.id === 'form-nova-peca') return criarPeca(evento.target);
+
   const rotaItem = `/api/catalogos/${estado.catalogoId}/itens/${estado.item.id}`;
   const dados = dadosDoFormulario(evento.target);
 
@@ -422,6 +506,9 @@ $('#painel-corpo').addEventListener('submit', async (evento) => {
 });
 
 $('#painel-corpo').addEventListener('click', async (evento) => {
+  if (evento.target.id === 'cancelar-nova') return fecharPainel();
+  if (!estado.item) return;
+
   const rotaItem = `/api/catalogos/${estado.catalogoId}/itens/${estado.item.id}`;
   const { removerAplicacao, removerCodigo, adotarFoto, principal, removerFoto } = evento.target.dataset;
   const rotaImagens = `/api/catalogos/${estado.catalogoId}/imagens`;
