@@ -9,7 +9,52 @@ com **faixa por volume** e histórico de reajuste.
 
 ## Rodando
 
-### Docker (recomendado)
+### Programa para Windows (mais simples)
+
+Gera o instalador e a versão portátil:
+
+```bash
+npm install && npm run dist
+```
+
+Saem dois arquivos em `dist/`:
+
+| Arquivo | O que faz |
+|---|---|
+| `Motrix-0.2.0-instalador.exe` | instala, cria o atalho na Área de Trabalho e no menu Iniciar |
+| `Motrix-0.2.0-portatil.exe` | roda direto, sem instalar — serve para pendrive |
+
+A máquina que vai usar **não precisa de Node, Docker nem VS Code**: o Electron leva tudo dentro.
+É o mesmo servidor Express rodando dentro do programa, numa porta livre escolhida na hora,
+acessível só em `127.0.0.1` (não abre nada para a rede).
+
+Seus dados ficam em `%APPDATA%\motrix\dados` — fora da pasta do programa, para sobreviverem a
+uma reinstalação. O menu **Ajuda → Onde ficam meus dados** abre essa pasta; faça o backup dela.
+
+O botão *Abrir catálogo* manda o catálogo exportado para o seu navegador padrão, que é onde
+está o `Ctrl+P` para salvar em PDF e a sua pasta de downloads.
+
+O executável **não é assinado digitalmente**. Na primeira execução o Windows mostra o aviso do
+SmartScreen: *Mais informações → Executar assim mesmo*. Sumir com esse aviso exige um
+certificado de assinatura de código (pago, emitido para pessoa física ou empresa).
+
+#### O detalhe do módulo nativo
+
+O `better-sqlite3` é compilado para uma versão específica do runtime, e o Node do sistema
+(ABI 115) e o Electron (ABI 130) não usam o mesmo binário. Por isso existem dois scripts:
+
+```bash
+npm run preparar:desktop   # binário para o Electron — já roda dentro de `dist` e `desktop`
+npm run preparar:node      # binário para o Node — necessário antes de `npm start` e do smoke
+```
+
+Na prática: depois de gerar o instalador, rode `npm run preparar:node` se for voltar a usar
+`npm start` ou os testes. O Docker não é afetado — ele compila dentro da imagem.
+
+O ícone é desenhado por código (`npm run icone`), sem editor de imagem: um "M" azul sobre
+quadrado escuro, gerado em 16 a 256 px e empacotado como `.ico`.
+
+### Docker (para servidor)
 
 ```bash
 docker compose up -d

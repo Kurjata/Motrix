@@ -39,6 +39,25 @@ app.use((erro, req, res, next) => {
   res.status(500).json({ erro: erro.message || 'Erro interno.' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Catalogo DE-PARA rodando em http://localhost:${PORT}`);
-});
+/**
+ * Sobe o servidor. Porta 0 pede uma porta livre ao sistema — e o que o aplicativo
+ * de desktop usa, para nunca brigar com outro programa ja ocupando a 3000.
+ * @returns {Promise<{servidor: import('http').Server, porta: number, url: string}>}
+ */
+function iniciar(porta = PORT) {
+  return new Promise((resolve, reject) => {
+    const servidor = app.listen(porta, '127.0.0.1');
+    servidor.once('error', reject);
+    servidor.once('listening', () => {
+      const { port } = servidor.address();
+      resolve({ servidor, porta: port, url: `http://127.0.0.1:${port}` });
+    });
+  });
+}
+
+// executado direto pelo Node (npm start); dentro do Electron quem chama e o desktop/main.js
+if (require.main === module) {
+  iniciar().then(({ url }) => console.log(`Motrix rodando em ${url}`));
+}
+
+module.exports = { app, iniciar };

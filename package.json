@@ -4,13 +4,62 @@
   "private": true,
   "description": "Motrix - controle de pecas catalogadas: importa catalogos e tabelas de preco, consolida o DE-PARA e exporta o catalogo de apresentacao",
   "type": "commonjs",
-  "main": "src/server.js",
+  "main": "desktop/main.js",
+  "author": "Felipe Kurjata",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "desktop": "npm run preparar:desktop && electron .",
+    "icone": "node scripts/gerar-icone.js",
+    "dist": "npm run icone && npm run preparar:desktop && electron-builder --win",
+    "preparar:desktop": "electron-rebuild -f --only better-sqlite3",
+    "preparar:node": "npm rebuild better-sqlite3"
+  },
+  "build": {
+    "appId": "com.kurjata.motrix",
+    "productName": "Motrix",
+    "copyright": "Felipe Kurjata",
+    "directories": {
+      "output": "dist",
+      "buildResources": "desktop"
+    },
+    "files": [
+      "desktop/**/*",
+      "src/**/*",
+      "public/**/*",
+      "package.json",
+      "!node_modules/canvas/**",
+      "!**/*.map"
+    ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "desktop/icone.ico"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portatil.${ext}"
+    },
+    "nsis": {
+      "artifactName": "${productName}-${version}-instalador.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Motrix",
+      "installerLanguages": [
+        "pt_BR"
+      ]
+    }
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
@@ -23,5 +72,10 @@
     "multer": "^2.2.0",
     "node-html-parser": "^6.1.13",
     "pdfjs-dist": "^3.11.174"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.2",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
   }
 }
