@@ -56,17 +56,23 @@ router.post('/', upload.array('arquivos', 20), async (req, res, next) => {
       : fornecedorService.obterOuCriar(req.body.fornecedor);
     const vigencia = /^\d{4}-\d{2}-\d{2}$/.test(req.body.vigencia || '') ? req.body.vigencia : null;
 
+    // desconto sobre a tabela cheia: a fabrica manda o preco de lista e o abatimento
+    // é combinado à parte. Guardamos o líquido, e o percentual fica registrado.
+    const desconto = Number(String(req.body.desconto ?? '').replace(',', '.'));
+    const descontoValido = Number.isFinite(desconto) && desconto > 0 && desconto < 100 ? desconto : null;
+
     const resultados = [];
     for (const file of enviados) {
       const { lastInsertRowid: arquivoId } = db
         .prepare(`
-          INSERT INTO arquivos (catalogo_id, fornecedor_id, vigencia, nome_original,
-                                caminho, extensao, mime, tamanho, hash)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          INSERT INTO arquivos (catalogo_id, fornecedor_id, vigencia, desconto_percentual,
+                                nome_original, caminho, extensao, mime, tamanho, hash)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .run(
           req.params.catalogoId,
           fornecedor?.id ?? null,
           vigencia,
+          descontoValido,
           file.originalname,
           file.path,
           extensaoDe(file.originalname),

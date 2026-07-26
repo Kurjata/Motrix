@@ -2,6 +2,7 @@
 
 const path = require('path');
 const { parseXlsx } = require('./xlsxParser');
+const { parseXls } = require('./xlsParser');
 const { parseDocx } = require('./docxParser');
 const { parsePdf } = require('./pdfParser');
 const { parsePsd } = require('./psdParser');
@@ -12,6 +13,7 @@ const EXTENSOES_ACEITAS = new Set(['.xlsx', '.xlsm', '.xls', '.docx', '.doc', '.
 const PARSERS = {
   '.xlsx': parseXlsx,
   '.xlsm': parseXlsx,
+  '.xls': parseXls,   // formato binario antigo: outra biblioteca, mesmo reconhecimento
   '.docx': parseDocx,
   '.pdf': parsePdf,
   '.psd': parsePsd,

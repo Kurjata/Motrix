@@ -166,7 +166,7 @@
 <div class="capa">
   <div class="capa-topo">
     <div class="produto">Catálogo · Peças&nbsp;Automotivas</div>
-    <div class="doc">Manual de uso<br />Versão 1.3</div>
+    <div class="doc">Manual de uso<br />Versão 1.4</div>
   </div>
 
   <h1>Da planilha da fábrica ao <em>catálogo do cliente</em>.</h1>
@@ -387,8 +387,9 @@
 
   <figure>
     <img src="img/tela-principal.png" alt="Tela principal do programa, com os blocos de importação, catálogo de apresentação e a lista de peças" />
-    <figcaption><span class="fig">Fig. 03.1</span> A tela é uma só, dividida em três blocos, na ordem do trabalho:
-      importar em cima, gerar o catálogo no meio, e a lista de peças embaixo.</figcaption>
+    <figcaption><span class="fig">Fig. 03.1</span> A lista de peças é a tela. Na faixa escura à esquerda ficam
+      as quatro seções; em cima, o catálogo em uso, a busca e os filtros; e a linha de contadores separa
+      o que mudou de preço do resto.</figcaption>
   </figure>
 
   <ol class="passos">
@@ -406,9 +407,9 @@
     </li>
     <li>
       <h4>Importe a tabela de uma fábrica</h4>
-      <p>No bloco <strong>Importar arquivo</strong>: escreva o nome da fábrica, escolha o arquivo e clique
-      em <strong>Importar</strong>. Em segundos aparece o resumo: quantas peças entraram, quantas eram novas,
-      quantos preços e quantas fotos ele achou.</p>
+      <p>Clique em <strong>Importar</strong> na barra lateral: abre um painel à direita. Escreva o nome da
+      fábrica, escolha o arquivo e clique em <strong>Importar</strong>. Em segundos aparece o resumo:
+      quantas peças entraram, quantas eram novas, quantos preços e quantas fotos ele achou.</p>
     </li>
     <li>
       <h4>Confira e ajuste</h4>
@@ -435,7 +436,8 @@
 
   <figure>
     <img src="img/card-importar.png" alt="Bloco de importação, com os campos fornecedor, data-base e arquivos" />
-    <figcaption><span class="fig">Fig. 04.1</span> Três campos, e só o arquivo é obrigatório.</figcaption>
+    <figcaption><span class="fig">Fig. 04.1</span> O painel de importação, aberto pela barra lateral.
+      Só o arquivo é obrigatório.</figcaption>
   </figure>
 
   <h3>O que preencher</h3>
@@ -450,6 +452,10 @@
           <td>A data de vigência daquela tabela. É ela que datA o reajuste: se você sobe a tabela de
           março e depois a de julho, o programa fecha a vigência antiga em julho e calcula a variação.
           Em branco, ele usa a data de hoje. Em arquivo sem preço, não tem efeito.</td></tr>
+      <tr><td><strong>Desconto sobre a tabela (%)</strong></td>
+          <td>Muita fábrica manda o preço de lista e o abatimento é combinado à parte. Informe o
+          percentual e o sistema guarda o que você <em>paga de verdade</em>. Uma tabela de R$ 22,85
+          com 55% entra como custo de R$ 10,28, e o histórico registra de onde veio o número.</td></tr>
       <tr><td><strong>Arquivos</strong></td>
           <td>Um ou vários de uma vez. Não existe campo dizendo “isto é preço” ou “isto é catálogo”:
           as colunas do arquivo já dizem o que ele é.</td></tr>
@@ -461,10 +467,11 @@
     <thead><tr><th style="width:24%">Formato</th><th>O que aproveita</th></tr></thead>
     <tbody>
       <tr><td><code>.xlsx</code> <code>.xlsm</code></td><td>Tabelas e as fotos ancoradas na linha da peça — a foto vai direto para a peça certa.</td></tr>
+      <tr><td><code>.xls</code> (Excel antigo)</td><td>Lido também. É o formato que muita fábrica ainda usa; não precisa converter.</td></tr>
       <tr><td><code>.docx</code></td><td>Tabelas e as fotos embutidas. As fotos entram como “sem peça”, para você vincular.</td></tr>
-      <tr><td><code>.pdf</code></td><td>Reconstrói a tabela pela posição do texto na página, e traz as imagens.</td></tr>
+      <tr><td><code>.pdf</code></td><td>Dois formatos: tabela com colunas, ou <strong>lista corrida</strong> — uma peça por linha, do tipo <code>HF-11 Bucha da bandeja Chevette R$ 8,00</code>. O sistema tenta os dois e fica com o que render mais peças.</td></tr>
       <tr><td><code>.psd</code></td><td>A arte da peça e o texto das camadas (código, descrição, aplicação).</td></tr>
-      <tr><td><code>.doc</code> <code>.xls</code> antigos</td><td>São guardados, mas não lidos. Abra no Office e salve como <code>.docx</code> / <code>.xlsx</code>.</td></tr>
+      <tr><td><code>.doc</code> antigo</td><td>Guardado, mas não lido. Abra no Word e salve como <code>.docx</code>.</td></tr>
     </tbody>
   </table>
 
@@ -495,8 +502,15 @@
   </div>
 
   <figure>
-    <img src="img/lista-pecas.png" alt="Lista de peças com colunas de código, descrição, fornecedor, custo e volume" />
-    <figcaption><span class="fig">Fig. 05.1</span> Cada linha é uma peça consolidada. A miniatura à esquerda é a foto principal.</figcaption>
+    <img src="img/resumo.png" alt="Contadores de peças, subiram, caíram, preço velho e sem preço" />
+    <figcaption><span class="fig">Fig. 05.1</span> Os contadores são atalhos: clique em <strong>Caíram</strong>
+      e a lista mostra só as peças que ficaram mais baratas. Clique de novo para voltar ao catálogo inteiro.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/lista-pecas.png" alt="Lista de peças com código em placa, descrição, aplicação, custo, volume e variação" />
+    <figcaption><span class="fig">Fig. 05.2</span> Cada linha é uma peça consolidada. O código vem em placa,
+      a aplicação e o fornecedor ficam embaixo da descrição, e a miniatura à esquerda é a foto principal.</figcaption>
   </figure>
 
   <table>
@@ -854,7 +868,7 @@ BETA    1+ un ......... R$ 71,20</div>
     </div>
   </div>
 
-  <p class="fim">Catálogo · Peças Automotivas — Manual de uso, versão 1.3</p>
+  <p class="fim">Catálogo · Peças Automotivas — Manual de uso, versão 1.4</p>
 </section>
 
 </body>

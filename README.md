@@ -94,6 +94,23 @@ importadas: aceita foto, código equivalente, preço por faixa de volume e entra
 exportado. Código repetido não é aceito em silêncio: o sistema avisa e oferece abrir a peça
 que já existe.
 
+### Quando o arquivo não é tabela
+
+Nem todo catálogo de fábrica tem cabeçalho. Muitos são **lista corrida**, uma peça por linha:
+`HF – 11 Bucha da Bandej. Inferior Susp. Diant. Chevette R$ 8,00 #RE`. Para esses,
+`src/parsers/listaPorLinha.js` reconhece por padrão dentro da linha — código no começo, preço no
+fim, descrição no meio, e o marcador da fábrica (`#RE`) guardado como observação.
+
+O leitor de PDF roda **os dois modos** (tabela e lista) em cada página e fica com o que render
+mais peças com código e preço. É o que faz o detector de cabeçalho se corrigir quando ele casa
+por engano.
+
+### Desconto sobre a tabela
+
+Fábrica que manda preço de lista e negocia o abatimento à parte: informe o percentual na
+importação. O custo gravado é o líquido, e o histórico registra `tabela 22.85 com 55% de
+desconto` — daqui a seis meses dá para saber de onde veio o número.
+
 ### Peça
 
 | Campo | Vem de |

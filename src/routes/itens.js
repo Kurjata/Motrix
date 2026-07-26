@@ -13,6 +13,20 @@ const router = express.Router({ mergeParams: true });
 const LIMITE_PADRAO = 50;
 const LIMITE_MAXIMO = 500;
 
+/**
+ * "Preco velho": a peca tem algum preco vigente que a fabrica nao confirmou na tabela mais
+ * recente dela. Fica num lugar so porque contador, filtro e aviso da linha precisam concordar —
+ * tres numeros divergentes na mesma tela seriam pior que o problema que eles apontam.
+ */
+const TEM_PRECO_VELHO = `EXISTS (
+  SELECT 1 FROM item_custos c
+   WHERE c.item_id = i.id AND c.vigencia_fim IS NULL
+     AND COALESCE(c.confirmado_em, c.vigencia_inicio) <
+         (SELECT MAX(COALESCE(a.vigencia, date(a.criado_em))) FROM arquivos a
+           WHERE a.catalogo_id = i.catalogo_id AND a.fornecedor_id = c.fornecedor_id
+             AND a.status = 'processado')
+)`;
+
 /** Campos do item que a tela de edicao pode alterar. */
 const CAMPOS_EDITAVEIS = {
   codigo: 'texto', descricao: 'texto', marca: 'texto', unidade: 'texto', ncm: 'texto',
@@ -101,17 +115,21 @@ function montarItens(itens) {
       ? Number((((custo - anterior) / anterior) * 100).toFixed(2))
       : null;
 
-    // o aviso segue o preco que a lista mostra na coluna Custo — que é o custo base
-    // quando existe, não o melhor custo
-    const exibido = item.custo_base ?? custo;
-    const sustenta = item.custos.find((c) => c.custo === exibido);
+    // qualquer preco vigente nao confirmado marca a peca — mesma regra do contador e do
+    // filtro. O aviso diz quais fornecedores e faixas estao velhos.
+    const velhos = item.custos.filter((c) => c.desatualizado);
 
     return {
       ...item,
       descricao_completa: descricaoCompleta(item),
       margem_percentual: custo != null && venda ? Number((((venda - custo) / venda) * 100).toFixed(2)) : null,
       variacao_custo: variacao,
-      preco_desatualizado: Boolean(sustenta?.desatualizado),
+      preco_desatualizado: velhos.length > 0,
+      precos_velhos: velhos.map((c) => ({
+        fornecedor: c.fornecedor,
+        qtd_min: c.qtd_min,
+        vigencia_inicio: c.vigencia_inicio,
+      })),
     };
   });
 }
@@ -163,6 +181,13 @@ router.get('/', (req, res) => {
   if (req.query.variou === '1') {
     condicoes.push('i.melhor_custo_anterior IS NOT NULL AND i.melhor_custo <> i.melhor_custo_anterior');
   }
+  if (req.query.subiu === '1') {
+    condicoes.push('i.melhor_custo_anterior IS NOT NULL AND i.melhor_custo > i.melhor_custo_anterior');
+  }
+  if (req.query.caiu === '1') {
+    condicoes.push('i.melhor_custo_anterior IS NOT NULL AND i.melhor_custo < i.melhor_custo_anterior');
+  }
+  if (req.query.preco_velho === '1') condicoes.push(TEM_PRECO_VELHO);
 
   const where = `WHERE ${condicoes.join(' AND ')}`;
   const total = db.prepare(`SELECT COUNT(*) AS n FROM vw_itens_custo i ${where}`).get(...params).n;
@@ -172,6 +197,22 @@ router.get('/', (req, res) => {
     .all(...params, limite, (pagina - 1) * limite);
 
   res.json({ total, pagina, limite, itens: montarItens(itens) });
+});
+
+/** Contadores do topo da tela. Cada um corresponde a um filtro da listagem. */
+router.get('/-/resumo', (req, res) => {
+  res.json(db.prepare(`
+    SELECT COUNT(*) AS total,
+           SUM(CASE WHEN i.melhor_custo_anterior IS NOT NULL
+                     AND i.melhor_custo > i.melhor_custo_anterior THEN 1 ELSE 0 END) AS subiram,
+           SUM(CASE WHEN i.melhor_custo_anterior IS NOT NULL
+                     AND i.melhor_custo < i.melhor_custo_anterior THEN 1 ELSE 0 END) AS cairam,
+           SUM(CASE WHEN i.melhor_custo_anterior IS NOT NULL
+                     AND i.melhor_custo = i.melhor_custo_anterior THEN 1 ELSE 0 END) AS estaveis,
+           SUM(CASE WHEN i.melhor_custo IS NULL THEN 1 ELSE 0 END)                   AS sem_custo,
+           SUM(CASE WHEN ${TEM_PRECO_VELHO} THEN 1 ELSE 0 END)                       AS preco_velho
+      FROM vw_itens_custo i
+     WHERE i.catalogo_id = ?`).get(req.params.catalogoId));
 });
 
 /** Montadoras presentes no catalogo, para alimentar o filtro da tela. */

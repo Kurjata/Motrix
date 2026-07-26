@@ -142,7 +142,7 @@ function localizarItem(catalogoId, item) {
  * coluna generica ("Preco", "Valor") entra como custo da faixa base (1+).
  * Coluna explicita de venda ("Preco de Venda") e a unica que vira preco_venda.
  */
-function faixasDeCusto(item) {
+function faixasDeCusto(item, descontoPercentual = 0) {
   const faixas = [...(item.faixas || [])];
   const base = item.custo ?? item.preco ?? null;
 
@@ -150,18 +150,34 @@ function faixasDeCusto(item) {
     faixas.unshift({ qtd_min: 1, qtd_max: null, custo: base });
   }
 
+  // a fabrica manda a tabela cheia e o desconto e combinado a parte; guardamos o que
+  // ele paga de verdade, e o percentual fica registrado no arquivo e na observacao
+  const fator = 1 - (Number(descontoPercentual) || 0) / 100;
+
   return faixas
     .filter((f) => f.custo !== null && f.custo !== undefined)
-    .map((f) => ({ qtd_min: f.qtd_min || 1, qtd_max: f.qtd_max ?? null, custo: f.custo }));
+    .map((f) => ({
+      qtd_min: f.qtd_min || 1,
+      qtd_max: f.qtd_max ?? null,
+      custo: Number((f.custo * fator).toFixed(4)),
+      cheio: f.custo,
+    }));
 }
 
 const persistir = db.transaction((arquivo, resultado, imagensSalvas) => {
-  const totais = { itens: 0, novos: 0, custos: 0, imagens: 0, semFornecedor: 0 };
+  const totais = { itens: 0, novos: 0, custos: 0, imagens: 0, semFornecedor: 0, ignoradas: 0 };
   const idPorRef = new Map();
   const vigencia = arquivo.vigencia || hoje();
 
   for (const item of resultado.itens) {
-    const faixas = faixasDeCusto(item);
+    const faixas = faixasDeCusto(item, arquivo.desconto_percentual);
+
+    // linha sem codigo e sem preco nao e peca: e titulo de secao ("* LANÇAMENTOS"),
+    // observacao da fabrica ou sobra de rodape
+    if (!item.codigo && !item.codigo_de && !faixas.length) {
+      totais.ignoradas++;
+      continue;
+    }
     const precoVenda = item.preco_venda ?? null;
     const existente = localizarItem(arquivo.catalogo_id, item);
 
@@ -220,6 +236,9 @@ const persistir = db.transaction((arquivo, resultado, imagensSalvas) => {
             lote_minimo: item.lote_minimo ?? null,
             vigencia_inicio: vigencia,
             arquivo_id: arquivo.id,
+            observacao: arquivo.desconto_percentual
+              ? `tabela ${faixa.cheio} com ${arquivo.desconto_percentual}% de desconto`
+              : null,
           });
           if (situacao !== 'inalterado') totais.custos++;
         }
@@ -277,6 +296,9 @@ async function processarArquivo(arquivoId) {
 
     const totais = persistir(arquivo, resultado, imagensSalvas);
     const avisos = [...(resultado.avisos ?? [])];
+    if (totais.ignoradas) {
+      avisos.push(`${totais.ignoradas} linha(s) sem código e sem preço foram ignoradas (título de seção ou observação).`);
+    }
     if (totais.semFornecedor) {
       avisos.push(`${totais.semFornecedor} linha(s) com custo foram ignoradas por nao ter fornecedor definido.`);
     }

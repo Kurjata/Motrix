@@ -34,4 +34,7 @@ garantirColuna(
   'UPDATE item_custos SET confirmado_em = vigencia_inicio WHERE confirmado_em IS NULL',
 );
 
+// desconto negociado sobre a tabela cheia da fabrica, informado na importacao
+garantirColuna('arquivos', 'desconto_percentual', 'REAL');
+
 module.exports = db;

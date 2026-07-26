@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS arquivos (
   catalogo_id       INTEGER NOT NULL REFERENCES catalogos(id) ON DELETE CASCADE,
   fornecedor_id     INTEGER REFERENCES fornecedores(id) ON DELETE SET NULL,
   vigencia          TEXT,                                -- data-base da tabela (YYYY-MM-DD)
+  desconto_percentual REAL,                              -- desconto negociado sobre a tabela cheia
   nome_original     TEXT NOT NULL,
   caminho           TEXT NOT NULL,
   extensao          TEXT NOT NULL,

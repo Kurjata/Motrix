@@ -26,8 +26,14 @@ const LINHA_PF1001 = 7; // a lista vem ordenada por código: AM, BU, CX, FL, PD 
 const TELAS = [
   { nome: 'tela-principal', url: '/', espera: '#tabela-itens tbody tr' },
   {
-    nome: 'card-importar', url: '/', espera: '#form-upload',
-    recortar: 'section.cartao', margem: 16,
+    // importar virou painel: precisa abrir pela barra lateral antes de fotografar
+    nome: 'card-importar', url: '/', espera: '#tabela-itens tbody tr',
+    antes: `document.querySelector('.rail-item[data-painel="importar"]').click()`,
+    aguardar: '#form-upload', recortar: '#painel-importar', altura: 430,
+  },
+  {
+    nome: 'resumo', url: '/', espera: '#tabela-itens tbody tr',
+    recortar: '#resumo', margem: 10,
   },
   {
     nome: 'lista-pecas', url: '/', espera: '#tabela-itens tbody tr',

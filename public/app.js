@@ -7,7 +7,7 @@ const estado = {
   busca: '',
   montadora: '',
   fornecedorId: '',
-  soVariou: false,
+  recorte: '',        // '' | 'subiu' | 'caiu' | 'preco_velho' | 'sem_custo' — vem do resumo
   fornecedores: [],
   item: null,
 };
@@ -37,7 +37,7 @@ const temaEfetivo = () => lerTemaSalvo() || (preferenciaEscura.matches ? 'escuro
 function pintarBotaoTema() {
   const escuro = temaEfetivo() === 'escuro';
   const botao = $('#tema');
-  botao.textContent = escuro ? '☀ Claro' : '☾ Escuro';
+  botao.innerHTML = `<span>${escuro ? 'Claro' : 'Escuro'}</span>`;
   botao.setAttribute('aria-label', escuro ? 'Mudar para o tema claro' : 'Mudar para o tema escuro');
 }
 
@@ -133,39 +133,62 @@ function celulaVariacao(item) {
 
   const subiu = item.variacao_custo > 0;
   const valor = `${subiu ? '+' : ''}${item.variacao_custo.toFixed(1)}%`;
-  return `<span class="${subiu ? 'reajuste-alta' : 'reajuste-baixa'}"
+  return `<span class="${subiu ? 'variacao-alta' : 'variacao-baixa'}"
     title="Melhor custo desde ${dataCurta(item.preco_desde)}">${subiu ? '▲' : '▼'} ${valor}</span>`;
 }
 
+/** A peça, a aplicação e o fornecedor em duas linhas: libera duas colunas de largura. */
 function linhaItem(item) {
   const foto = item.imagens[0]
     ? `<img class="miniatura" src="${item.imagens[0].url}" alt="" />`
     : '<div class="sem-foto"></div>';
 
-  const fornecedores = item.qtd_fornecedores > 1
-    ? `${escapar(item.melhor_fornecedor)} <span class="suave">(+${item.qtd_fornecedores - 1})</span>`
-    : escapar(item.melhor_fornecedor ?? '') || '<span class="suave">—</span>';
+  const veiculo = item.aplicacoes[0];
+  const anos = veiculo?.ano_inicio
+    ? `${veiculo.ano_inicio}${veiculo.ano_fim ? `-${veiculo.ano_fim}` : '+'}`
+    : null;
+  const aplicacao = veiculo
+    ? [veiculo.montadora, veiculo.modelo, veiculo.motor, veiculo.versao, anos].filter(Boolean).join(' ')
+    : null;
+
+  const fornecedor = item.melhor_fornecedor
+    ? `${escapar(item.melhor_fornecedor)}${item.qtd_fornecedores > 1 ? ` +${item.qtd_fornecedores - 1}` : ''}`
+    : 'sem fornecedor';
 
   const volume = item.qtd_faixas_volume
-    ? `${moeda(item.melhor_custo)} <span class="suave">no volume</span>`
+    ? moeda(item.melhor_custo)
     : '<span class="suave">—</span>';
 
-  const aviso = item.preco_desatualizado
-    ? `<div class="desatualizado" title="A última tabela deste fornecedor não trouxe esta peça. O preço é de ${dataCurta(item.preco_desde)}.">⚠ desde ${dataCurta(item.preco_desde)}</div>`
-    : (item.preco_desde ? `<div class="suave desde">desde ${dataCurta(item.preco_desde)}</div>` : '');
+  const velhos = (item.precos_velhos ?? [])
+    .map((p) => `${p.fornecedor} · ${p.qtd_min <= 1 ? '1+' : `${p.qtd_min}+`} un, de ${dataCurta(p.vigencia_inicio)}`)
+    .join(' | ');
+  const marca = item.preco_desatualizado
+    ? `<div class="tarja" title="Preço que a fábrica não confirmou na última tabela: ${escapar(velhos)}">⚠ ${dataCurta(item.preco_desde)}</div>`
+    : (item.preco_desde ? `<div class="desde">${dataCurta(item.preco_desde)}</div>` : '');
 
   return `
     <tr class="clicavel" data-item="${item.id}">
       <td>${foto}</td>
-      <td><strong>${escapar(item.codigo ?? '—')}</strong></td>
-      <td>${escapar(item.descricao_completa) || '<span class="suave">sem descrição</span>'}</td>
-      <td>${fornecedores}</td>
-      <td class="num">${moeda(item.custo_base ?? item.melhor_custo)}${aviso}</td>
+      <td><span class="placa">${escapar(item.codigo ?? '—')}</span></td>
+      <td>
+        <div class="peca-desc">${escapar(item.descricao) || '<span class="suave">sem descrição</span>'}</div>
+        <div class="peca-aplic">${aplicacao ? escapar(aplicacao) : 'sem aplicação'} · ${fornecedor}</div>
+      </td>
+      <td class="num">${moeda(item.custo_base ?? item.melhor_custo)}${marca}</td>
       <td class="num">${volume}</td>
       <td class="num">${celulaVariacao(item)}</td>
       <td><button class="secundario mini" data-item="${item.id}">Editar</button></td>
     </tr>`;
 }
+
+/** Tela vazia é convite, não desculpa: diz o que aquele recorte significa. */
+const VAZIO = {
+  '': 'Nenhuma peça ainda. Importe a tabela de uma fábrica ou cadastre a primeira peça.',
+  subiu: 'Nenhuma peça subiu de preço.',
+  caiu: 'Nenhuma peça ficou mais barata.',
+  preco_velho: 'Todos os preços foram confirmados na última tabela de cada fábrica.',
+  sem_custo: 'Todas as peças têm preço lançado.',
+};
 
 async function carregarItens() {
   const corpo = $('#tabela-itens tbody');
@@ -175,16 +198,15 @@ async function carregarItens() {
   if (estado.busca) parametros.set('busca', estado.busca);
   if (estado.montadora) parametros.set('montadora', estado.montadora);
   if (estado.fornecedorId) parametros.set('fornecedor_id', estado.fornecedorId);
-  if (estado.soVariou) parametros.set('variou', '1');
+  if (estado.recorte) parametros.set(estado.recorte, '1');
 
   const dados = await api(`/api/catalogos/${estado.catalogoId}/itens?${parametros}`);
   corpo.innerHTML = dados.itens.length
     ? dados.itens.map(linhaItem).join('')
-    : `<tr><td colspan="8" class="suave">${estado.soVariou
-        ? 'Nenhuma peça mudou de preço na última importação.' : 'Nenhuma peça encontrada.'}</td></tr>`;
+    : `<tr><td colspan="7" class="suave">${VAZIO[estado.recorte] ?? 'Nenhuma peça encontrada.'}</td></tr>`;
 
   const paginas = Math.max(Math.ceil(dados.total / estado.limite), 1);
-  $('#contador').textContent = `— ${dados.total} peça(s)`;
+  $('#contador').textContent = `${dados.total} peça(s)`;
   $('#pagina-atual').textContent = `Página ${estado.pagina} de ${paginas}`;
   $('#anterior').disabled = estado.pagina <= 1;
   $('#proxima').disabled = estado.pagina >= paginas;
@@ -200,9 +222,30 @@ async function carregarVersao() {
   }
 }
 
+/** Contadores do topo. Cada um é o atalho para o filtro correspondente. */
+async function carregarResumo() {
+  if (!estado.catalogoId) return;
+  const r = await api(`/api/catalogos/${estado.catalogoId}/itens/-/resumo`);
+  $('#m-total').textContent = r.total;
+  $('#m-subiram').textContent = r.subiram;
+  $('#m-cairam').textContent = r.cairam;
+  $('#m-velho').textContent = r.preco_velho;
+  $('#m-sem-custo').textContent = r.sem_custo;
+}
+
+async function carregarFabricas() {
+  const fabricas = await api('/api/fornecedores');
+  $('#lista-fabricas').innerHTML = fabricas.length
+    ? `<div class="item-lista">${fabricas.map((f) => `
+        <div><span><strong>${escapar(f.nome)}</strong></span>
+        <span class="suave">${f.itens_cotados} peça(s) cotada(s)</span></div>`).join('')}</div>
+       <p class="dica">A fábrica é criada na importação, quando você informa o fornecedor.</p>`
+    : '<p class="dica">Nenhuma fábrica ainda. Elas aparecem aqui quando você importa uma tabela informando o fornecedor.</p>';
+}
+
 async function atualizarTudo() {
   await carregarCatalogos();
-  await Promise.all([carregarFornecedores(), carregarMontadoras(), carregarItens()]);
+  await Promise.all([carregarFornecedores(), carregarMontadoras(), carregarItens(), carregarResumo()]);
 }
 
 // ------------------------------------------------------------------ painel de edicao
@@ -441,14 +484,41 @@ async function abrirItem(itemId) {
 
 async function recarregarPainel() {
   await abrirItem(estado.item.id);
-  await carregarItens();
-  await carregarMontadoras();
+  await Promise.all([carregarItens(), carregarMontadoras(), carregarResumo()]);
 }
+
+const PAINEIS = {
+  pecas: null, // "peças" é a própria tela: clicar só fecha o que estiver aberto
+  importar: '#painel-importar',
+  catalogo: '#painel-catalogo',
+  fabricas: '#painel-fabricas',
+};
 
 function fecharPainel() {
   estado.item = null;
-  $('#painel').classList.add('oculto');
+  for (const seletor of ['#painel', ...Object.values(PAINEIS).filter(Boolean)]) {
+    $(seletor).classList.add('oculto');
+  }
   $('#cortina').classList.add('oculto');
+  marcarRail('pecas');
+}
+
+function marcarRail(nome) {
+  for (const botao of document.querySelectorAll('.rail-item[data-painel]')) {
+    botao.classList.toggle('ativo', botao.dataset.painel === nome);
+  }
+}
+
+async function abrirPainelLateral(nome) {
+  fecharPainel();
+  const seletor = PAINEIS[nome];
+  if (!seletor) return;
+
+  if (nome === 'fabricas') await carregarFabricas();
+  $(seletor).classList.remove('oculto');
+  $('#cortina').classList.remove('oculto');
+  marcarRail(nome);
+  $(seletor).querySelector('input, select, button')?.focus();
 }
 
 function dadosDoFormulario(formulario) {
@@ -461,11 +531,31 @@ $('#tema').addEventListener('click', () => {
   aplicarTema(temaEfetivo() === 'escuro' ? 'claro' : 'escuro');
 });
 
+for (const botao of document.querySelectorAll('.rail-item[data-painel]')) {
+  botao.addEventListener('click', () => {
+    abrirPainelLateral(botao.dataset.painel).catch((erro) => alert(erro.message));
+  });
+}
+
+$('#resumo').addEventListener('click', (evento) => {
+  const botao = evento.target.closest('.metrica');
+  if (!botao) return;
+
+  // clicar no contador que já está ativo volta para a lista inteira
+  estado.recorte = botao.dataset.filtro === estado.recorte ? '' : botao.dataset.filtro;
+  estado.pagina = 1;
+  for (const m of document.querySelectorAll('.metrica')) {
+    m.classList.toggle('ativa', m.dataset.filtro === estado.recorte);
+  }
+  carregarItens();
+});
+
 $('#catalogo').addEventListener('change', (evento) => {
   estado.catalogoId = Number(evento.target.value);
   estado.pagina = 1;
   carregarMontadoras();
   carregarItens();
+  carregarResumo();
 });
 
 $('#novo-catalogo').addEventListener('click', async () => {
@@ -518,6 +608,9 @@ $('#nova-peca').addEventListener('click', () => {
 
 $('#fechar-painel').addEventListener('click', fecharPainel);
 $('#cortina').addEventListener('click', fecharPainel);
+for (const botao of document.querySelectorAll('.painel .fechar')) {
+  botao.addEventListener('click', fecharPainel);
+}
 document.addEventListener('keydown', (evento) => { if (evento.key === 'Escape') fecharPainel(); });
 
 $('#painel-corpo').addEventListener('submit', async (evento) => {
@@ -642,7 +735,7 @@ $('#aplicar-margem').addEventListener('click', async () => {
       sobrescrever: $('#sobrescrever').checked,
     });
     mostrarResumo(`${resultado.precificados} peça(s) precificadas de ${resultado.itens_com_custo} com custo lançado.`);
-    await carregarItens();
+    await Promise.all([carregarItens(), carregarResumo()]);
   } catch (erro) {
     mostrarResumo(erro.message, true);
   }
@@ -660,12 +753,6 @@ $('#busca').addEventListener('input', (evento) => {
 
 $('#filtro-montadora').addEventListener('change', (evento) => {
   estado.montadora = evento.target.value;
-  estado.pagina = 1;
-  carregarItens();
-});
-
-$('#filtro-variou').addEventListener('change', (evento) => {
-  estado.soVariou = evento.target.checked;
   estado.pagina = 1;
   carregarItens();
 });
